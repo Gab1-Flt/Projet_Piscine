@@ -1,0 +1,41 @@
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Build outputs
+dist/
+dist-ssr/
+*.local
+out/
+build/
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# PHP & Server Logs
+*.log
+error_log
+php_errors.log
+
+# Local Env Files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# MAMP / Local configurations
+config.local.php
+
+# User uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
+

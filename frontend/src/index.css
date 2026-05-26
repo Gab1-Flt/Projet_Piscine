@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-carbon-950 text-carbon-100;
+    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  }
+}
+
+/* Premium styling utilities */
+.glass-panel {
+  background: rgba(26, 26, 30, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(42, 42, 48, 0.5);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #F4F4F5 30%, #A1A1AA 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-red {
+  background: linear-gradient(135deg, #FF6B6B 30%, #E53E3E 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
