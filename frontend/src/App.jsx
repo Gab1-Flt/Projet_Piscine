@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-  Search, Bell, MessageSquare, User, Grid, List, Shield, 
-  ShoppingCart, Timer, SlidersHorizontal, ArrowUpRight, 
-  Check, X, Zap, Cpu, Compass, Landmark
+import {
+  Search, Bell, MessageSquare, User, Grid, List, Shield,
+  ShoppingCart, Timer, SlidersHorizontal, ArrowUpRight,
+  Check, X, Zap, Cpu, Compass, Landmark, Heart
 } from 'lucide-react';
 
 function App() {
-  // Products dataset matching Stitch designs and database init.sql
+  // Jeu de données des produits traduit en français, en lien avec init.sql
   const initialProducts = [
     {
       id: 1,
@@ -17,10 +17,11 @@ function App() {
       mileage: 42000,
       chassis: 'BNR34-001245',
       engine: 'RB26DETT',
-      power: '276 HP (Est.)',
+      power: '276 ch (Est.)',
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCYHi8qgkPyuiftrZVdjQQwE4Eh7S158JuDGf2KJyFbAw4_KWz5d4jb56mQAqWwjei9durzUYfFKGEcqwY7tRbAFsG2V9SdRFM8_yOmMtdP-yeB2RSFav-20zapB5A2-eLNo1kVnIqHo-POlbW5KxaxTogcAEnl5734j-HI8ydyidVNsbUvFB2exBJWtgnyc4OqLMPJ3rvxKyXWl7HL8f0q8XDTPtQi4fVT27C-2shtfJlBWkwwnE48FdyHlVzDv4IJCqDPhX9qVpuS',
-      category: 'JDM Cars',
-      status: 'Auction Live',
+      category: 'Voitures JDM',
+      status: 'Enchère en Cours',
+      saleType: 'auction',
       verified: true
     },
     {
@@ -32,24 +33,26 @@ function App() {
       mileage: 82000,
       chassis: 'JZA80-004561',
       engine: '2JZ-GTE',
-      power: '320 HP',
+      power: '320 ch',
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBDSmJnIPbRjQaMNC1mHAisMSOoLuNqShjOz7DWIKtIg3yh_kD7839JfpBJPcbJfOn5wJi2zX0OolZH1QQMxMgRSNO9_8Vu3NkqQT1eZyvYICQH67HV5W9HT-ADfP83VaY5DX4vhuGqveqbUP_BeFLoYr4nAfh6R2gb_h5zhTMNF2lYv4ovJ7CSVWnlWW87jX_Y7YQfjYpSS6Lk4GmdzIl-alIhGDjNq0zI2tHfz7PtvN7LA-Nw92WC9WMgFmLDnKUBF0w5gWMyD0AP',
-      category: 'JDM Cars',
-      status: 'Direct Sale',
+      category: 'Voitures JDM',
+      status: 'Négociation',
+      saleType: 'negotiation',
       verified: false
     },
     {
       id: 3,
       brand: 'HKS',
-      model: 'GTIII-RS Sports Turbine Kit',
+      model: 'Kit Turbine Sport GTIII-RS',
       year: 2024,
       price: 2450,
-      chassis: 'Specs: Bolt-On',
-      engine: 'Fits: RB25DET / SR20DET',
-      power: 'Target: Up to 450hp',
+      chassis: 'Montage : Direct (Bolt-On)',
+      engine: 'Moteurs : RB25DET / SR20DET',
+      power: 'Cible : Jusqu\'à 450 ch',
       image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBFS_XUZxgUN809E7Tkl0nMfYsklWjXQomaFH_9Ehqim3Om8JpnDOo8Ms6GRPKjL7oiIN9Kowkch3-CjgZ-E-5oKxmeVDcHyc7cFJtsANv5KV6JMpeSmZX2T-P_eICndaeXgb1PhgCsIjmLwtzi8zhOMkwsdoIZSGx_pNwEvwwe1NS-iSLURfcT8U497XBOCuA9mg2NBGodYm8SgBO0qFDs1qHGp9IR1LLOMPX1svBVrxS7phBWKfaNiKO-n15c8084RcTvKW-6cUXE',
-      category: 'Performance Parts',
-      status: 'Precision Engineered',
+      category: 'Pièces Performance',
+      status: 'Achat Direct',
+      saleType: 'direct',
       verified: true
     },
     {
@@ -60,11 +63,12 @@ function App() {
       price: 95000,
       mileage: 56000,
       chassis: 'FD3S-600452',
-      engine: '13B-REW Rotary',
-      power: '276 HP',
+      engine: '13B-REW Rotatif',
+      power: '276 ch',
       image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80',
-      category: 'JDM Cars',
-      status: 'Direct Sale',
+      category: 'Voitures JDM',
+      status: 'Négociation',
+      saleType: 'negotiation',
       verified: true
     },
     {
@@ -76,46 +80,61 @@ function App() {
       mileage: 24000,
       chassis: 'NA2-100234',
       engine: 'C32B V6',
-      power: '290 HP',
+      power: '290 ch',
       image: 'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&w=800&q=80',
-      category: 'JDM Cars',
-      status: 'Auction Live',
+      category: 'Voitures JDM',
+      status: 'Enchère en Cours',
+      saleType: 'auction',
       verified: true
     },
     {
       id: 6,
       brand: 'Mugen',
-      model: 'GP Wheels 18" Bronze Set',
+      model: 'Jantes GP 18" Bronze (Set)',
       year: 2023,
       price: 3200,
-      chassis: 'Size: 18x8.5J +45',
-      engine: 'Fits: Civic Type R FK8/FL5',
-      power: 'Weight: 7.8kg/wheel',
+      chassis: 'Taille : 18x8.5J +45',
+      engine: 'Moteurs : Civic Type R FK8/FL5',
+      power: 'Poids : 7.8 kg par jante',
       image: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=800&q=80',
-      category: 'Accessories',
-      status: 'Performance Grade',
+      category: 'Accessoires',
+      status: 'Achat Direct',
+      saleType: 'direct',
       verified: false
     }
   ];
 
-  // Core state management
+  // Gestion des états
   const [products, setProducts] = useState(initialProducts);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState(['JDM Cars', 'Performance Parts', 'Accessories']);
-  const [selectedBrand, setSelectedBrand] = useState(null); // 'Nissan', 'Toyota', etc.
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [selectedCategories, setSelectedCategories] = useState(['Voitures JDM', 'Pièces Performance', 'Accessoires']);
+  const [selectedBrand, setSelectedBrand] = useState(null);
+  const [viewMode, setViewMode] = useState('grid');
   const [cartCount, setCartCount] = useState(0);
-  
-  // Bidding state variables
+  const [favorites, setFavorites] = useState([]); // Tableau contenant les IDs des produits favoris
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false); // Filtre favoris uniquement
+  const [salesFilter, setSalesFilter] = useState('all'); // 'all', 'auction', 'negotiation', 'direct'
+  const [showProfileMenu, setShowProfileMenu] = useState(false); // Menu déroulant de profil
+
+  // États de l'enchère interactive
   const [biddingProduct, setBiddingProduct] = useState(null);
   const [bidAmount, setBidAmount] = useState('');
   const [bidSuccess, setBidSuccess] = useState(false);
   const [bidHistory, setBidHistory] = useState([
-    { bidder: 'keiichi_tsuchiya', amount: 180000, date: '10 min ago' },
-    { bidder: 'takumi_86', amount: 175000, date: '2 hours ago' }
+    { bidder: 'keiichi_tsuchiya', amount: 180000, date: 'Il y a 10 min' },
+    { bidder: 'takumi_86', amount: 175000, date: 'Il y a 2 heures' }
   ]);
 
-  // Handle category checkbox change
+  // Ajouter / Retirer des favoris
+  const toggleFavorite = (productId) => {
+    if (favorites.includes(productId)) {
+      setFavorites(favorites.filter(id => id !== productId));
+    } else {
+      setFavorites([...favorites, productId]);
+    }
+  };
+
+  // Clic sur une catégorie
   const handleCategoryChange = (category) => {
     if (selectedCategories.includes(category)) {
       setSelectedCategories(selectedCategories.filter(c => c !== category));
@@ -124,39 +143,40 @@ function App() {
     }
   };
 
-  // Toggle brand selection
+  // Clic pastille de marque
   const handleBrandSelect = (brand) => {
     if (selectedBrand === brand) {
-      setSelectedBrand(null); // Clear filter
+      setSelectedBrand(null);
     } else {
       setSelectedBrand(brand);
     }
   };
 
-  // Filter products dynamically
+  // Filtrage dynamique
   const filteredProducts = products.filter(product => {
-    const matchesSearch = 
+    const matchesSearch =
       product.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.engine.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.chassis.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const matchesCategory = selectedCategories.includes(product.category);
     const matchesBrand = selectedBrand ? product.brand === selectedBrand : true;
+    const matchesFavorites = showOnlyFavorites ? favorites.includes(product.id) : true;
+    const matchesSalesType = salesFilter === 'all' ? true : product.saleType === salesFilter;
 
-    return matchesSearch && matchesCategory && matchesBrand;
+    return matchesSearch && matchesCategory && matchesBrand && matchesFavorites && matchesSalesType;
   });
 
-  // Handle Bidding Submission
+  // Soumission d'une enchère
   const handleBidSubmit = (e) => {
     e.preventDefault();
     const numericBid = parseFloat(bidAmount);
     if (isNaN(numericBid) || numericBid <= biddingProduct.price) {
-      alert(`Votre offre doit être supérieure à l'offre actuelle ($${biddingProduct.price.toLocaleString()})`);
+      alert(`Votre offre doit être strictement supérieure à l'offre actuelle ($${biddingProduct.price.toLocaleString()})`);
       return;
     }
 
-    // Update bidding details
     setProducts(products.map(p => {
       if (p.id === biddingProduct.id) {
         return { ...p, price: numericBid };
@@ -177,22 +197,22 @@ function App() {
     }, 1800);
   };
 
-  // Add to cart notification trigger
   const handleAddToCart = () => {
     setCartCount(prev => prev + 1);
   };
 
   return (
     <div className="min-h-screen bg-[#131313] text-[#e5e2e1] antialiased overflow-x-hidden font-sans pt-24 selection:bg-primary selection:text-[#460283]">
-      
-      {/* Dynamic Background Radial Gradients simulating Tokyo Neon glow */}
+
+      {/* Gradients lumineux néons en arrière-plan */}
       <div className="absolute top-0 right-0 w-[40vw] h-[40vw] rounded-full bg-primary/5 blur-[120px] pointer-events-none"></div>
       <div className="absolute bottom-[20%] left-0 w-[35vw] h-[35vw] rounded-full bg-secondary/5 blur-[120px] pointer-events-none"></div>
 
-      {/* TopNavBar */}
+      {/* Barre de navigation */}
       <nav className="bg-[#131313]/80 backdrop-blur-xl fixed top-0 w-full z-40 border-b border-white/10 shadow-[0_0_20px_rgba(187,134,252,0.1)]">
         <div className="flex justify-between items-center h-20 px-4 md:px-16 w-full max-w-[1440px] mx-auto">
-          {/* Brand */}
+
+          {/* Logo & Titre */}
           <div className="flex items-center space-x-2.5">
             <div className="w-9 h-9 rounded bg-[#bb86fc] flex items-center justify-center font-black tracking-tighter text-[#460283] italic text-lg shadow-[0_0_12px_rgba(187,134,252,0.4)]">
               MN
@@ -203,28 +223,29 @@ function App() {
             </div>
           </div>
 
-          {/* Navigation Links */}
+          {/* Onglets Principaux */}
           <div className="hidden lg:flex gap-8 items-center font-semibold text-sm">
-            <a className="text-[#bb86fc] border-b-2 border-[#bb86fc] pb-1 cursor-pointer transition-colors" href="#">Cars</a>
-            <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Parts</a>
-            <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Auctions</a>
-            <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Builds</a>
+            <a className="text-[#bb86fc] border-b-2 border-[#bb86fc] pb-1 cursor-pointer transition-colors" href="#">Voitures</a>
+            <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Pièces</a>
+            <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Enchères</a>
+            <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Préparations</a>
           </div>
 
-          {/* Search Bar & Trailing Icons */}
+          {/* Recherche & Icônes d'action */}
           <div className="flex items-center gap-4 md:gap-6">
-            {/* Search Field */}
+
+            {/* Input de Recherche */}
             <div className="relative group input-glow border border-white/10 rounded-lg bg-[#1c1b1b] transition-all duration-300 w-44 md:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#cdc3d4] w-4.5 h-4.5" />
-              <input 
-                className="w-full bg-transparent border-none text-[#e5e2e1] font-mono text-xs pl-10 pr-4 py-2.5 focus:outline-none focus:ring-0 placeholder-[#cdc3d4]/30" 
-                placeholder="Chassis, Moteur, Pièces..." 
+              <input
+                className="w-full bg-transparent border-none text-[#e5e2e1] font-mono text-xs pl-10 pr-4 py-2.5 focus:outline-none focus:ring-0 placeholder-[#cdc3d4]/30"
+                placeholder="Rechercher châssis, moteur, pièces..."
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               {searchQuery && (
-                <button 
+                <button
                   onClick={() => setSearchQuery('')}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
                 >
@@ -242,8 +263,23 @@ function App() {
                 <MessageSquare size={20} />
                 <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-secondary"></span>
               </button>
-              
-              {/* Shopping Cart Indicator */}
+
+              {/* Bouton Favoris Interactif */}
+              <button
+                onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
+                className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${showOnlyFavorites ? 'text-[#ffb2bc] bg-[#ffb2bc]/10 shadow-[0_0_12px_rgba(255,178,188,0.25)]' : 'text-[#cdc3d4] hover:text-[#ffb2bc] hover:bg-white/5'
+                  }`}
+                title={showOnlyFavorites ? "Afficher tout le catalogue" : "Afficher mes favoris"}
+              >
+                <Heart size={20} className={showOnlyFavorites ? "fill-[#ffb2bc]" : ""} />
+                {favorites.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#ffb2bc] text-[9px] text-[#400013] font-bold flex items-center justify-center shadow-[0_0_8px_rgba(255,178,188,0.5)]">
+                    {favorites.length}
+                  </span>
+                )}
+              </button>
+
+              {/* Panier Interactif */}
               <button className="text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5 p-2 rounded-full transition-all relative active:scale-95">
                 <ShoppingCart size={20} />
                 {cartCount > 0 && (
@@ -253,37 +289,84 @@ function App() {
                 )}
               </button>
 
-              <button className="text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5 p-2 rounded-full transition-all active:scale-95">
-                <User size={20} />
-              </button>
+              {/* Menu Profil avec Dropdown */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className={`p-2 rounded-full transition-all active:scale-95 cursor-pointer ${
+                    showProfileMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
+                  }`}
+                  title="Mon profil"
+                >
+                  <User size={20} />
+                </button>
+
+                {/* Dropdown Menu de Profil */}
+                {showProfileMenu && (
+                  <>
+                    {/* Backdrop invisible pour fermer le menu lors d'un clic en dehors */}
+                    <div 
+                      onClick={() => setShowProfileMenu(false)}
+                      className="fixed inset-0 z-30"
+                    ></div>
+                    
+                    <div className="absolute right-0 mt-3 w-48 rounded-xl glass-panel border border-white/10 bg-[#1c1b1b]/95 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-40 animate-in fade-in slide-in-from-top-2 duration-150">
+                      <button 
+                        onClick={() => { setShowProfileMenu(false); alert("Ouverture de l'espace Mon compte (Célestin / Profil)"); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-mono text-[#cdc3d4] hover:text-primary hover:bg-primary/5 transition-all text-left cursor-pointer"
+                      >
+                        <User size={14} className="text-[#bb86fc]" />
+                        <span>Mon compte</span>
+                      </button>
+                      
+                      <button 
+                        onClick={() => { setShowProfileMenu(false); alert("Ouverture de l'espace Mes achats (Gabin / Historique)"); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-mono text-[#cdc3d4] hover:text-secondary hover:bg-secondary/5 transition-all text-left cursor-pointer"
+                      >
+                        <ShoppingCart size={14} className="text-[#ffb2bc]" />
+                        <span>Mes achats</span>
+                      </button>
+                      
+                      <button 
+                        onClick={() => { setShowProfileMenu(false); alert("Ouverture de l'espace Vendeur (Gestion des véhicules et pièces)"); }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-mono text-[#cdc3d4] hover:text-[#17deca] hover:bg-[#17deca]/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1 pt-2"
+                      >
+                        <Cpu size={14} className="text-[#17deca]" />
+                        <span>Mon espace vendeur</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
       </nav>
 
-      {/* Main Content Layout */}
+      {/* Zone de contenu principale */}
       <main className="max-w-[1440px] mx-auto px-4 md:px-16 py-8 grid grid-cols-4 lg:grid-cols-12 gap-6">
-        
-        {/* Sidebar / Filter Panel */}
+
+        {/* Panneau de Filtres Latéral */}
         <aside className="col-span-4 lg:col-span-3 space-y-6">
           <div className="glass-panel rounded-2xl p-6 border border-white/5">
             <div className="flex items-center space-x-2.5 mb-6">
               <SlidersHorizontal className="text-[#bb86fc]" size={18} />
-              <h3 className="font-bold text-base tracking-wide font-sans">Refine Search</h3>
+              <h3 className="font-bold text-base tracking-wide font-sans">Affiner la Recherche</h3>
             </div>
-            
+
             <div className="space-y-6">
-              {/* Categories */}
+
+              {/* Choix des Catégories */}
               <div>
-                <h4 className="text-[11px] font-bold text-[#cdc3d4]/50 uppercase tracking-widest mb-3">Categories</h4>
+                <h4 className="text-[11px] font-bold text-[#cdc3d4]/50 uppercase tracking-widest mb-3">Catégories</h4>
                 <ul className="space-y-2.5">
-                  {['JDM Cars', 'Performance Parts', 'Accessories'].map((cat) => (
+                  {['Voitures JDM', 'Pièces Performance', 'Accessoires'].map((cat) => (
                     <li key={cat}>
                       <label className="flex items-center gap-3 cursor-pointer group">
-                        <input 
-                          checked={selectedCategories.includes(cat)} 
+                        <input
+                          checked={selectedCategories.includes(cat)}
                           onChange={() => handleCategoryChange(cat)}
-                          className="form-checkbox bg-[#201f1f] border-white/10 text-[#bb86fc] focus:ring-[#bb86fc] rounded cursor-pointer" 
+                          className="form-checkbox bg-[#201f1f] border-white/10 text-[#bb86fc] focus:ring-[#bb86fc] rounded cursor-pointer"
                           type="checkbox"
                         />
                         <span className="text-sm text-[#e5e2e1] group-hover:text-[#bb86fc] transition-colors">
@@ -295,19 +378,18 @@ function App() {
                 </ul>
               </div>
 
-              {/* Makes */}
+              {/* Constructeurs JDM */}
               <div className="pt-5 border-t border-white/5">
-                <h4 className="text-[11px] font-bold text-[#cdc3d4]/50 uppercase tracking-widest mb-3">Make / Brands</h4>
+                <h4 className="text-[11px] font-bold text-[#cdc3d4]/50 uppercase tracking-widest mb-3">Marque / Constructeur</h4>
                 <div className="flex flex-wrap gap-2">
                   {['Nissan', 'Toyota', 'Honda', 'Mazda', 'HKS', 'Mugen'].map((brand) => (
-                    <button 
+                    <button
                       key={brand}
                       onClick={() => handleBrandSelect(brand)}
-                      className={`px-3.5 py-1.5 rounded-full border transition-all font-mono text-xs cursor-pointer ${
-                        selectedBrand === brand 
-                          ? 'border-[#bb86fc] text-[#bb86fc] bg-[#bb86fc]/10 shadow-[0_0_10px_rgba(187,134,252,0.25)]' 
+                      className={`px-3.5 py-1.5 rounded-full border transition-all font-mono text-xs cursor-pointer ${selectedBrand === brand
+                          ? 'border-[#bb86fc] text-[#bb86fc] bg-[#bb86fc]/10 shadow-[0_0_10px_rgba(187,134,252,0.25)]'
                           : 'border-white/10 text-[#cdc3d4] hover:border-[#bb86fc]/50 hover:text-[#bb86fc]'
-                      }`}
+                        }`}
                     >
                       {brand}
                     </button>
@@ -315,14 +397,30 @@ function App() {
                 </div>
               </div>
 
-              {/* System Stats Block */}
+              {/* Favoris Uniquement */}
+              <div className="pt-4 mt-4 border-t border-white/5">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    checked={showOnlyFavorites}
+                    onChange={() => setShowOnlyFavorites(!showOnlyFavorites)}
+                    className="form-checkbox bg-[#201f1f] border-white/10 text-[#ffb2bc] focus:ring-[#ffb2bc] rounded cursor-pointer"
+                    type="checkbox"
+                  />
+                  <span className="text-sm text-[#e5e2e1] group-hover:text-[#ffb2bc] transition-colors flex items-center gap-1.5">
+                    <Heart size={14} className={showOnlyFavorites ? "fill-[#ffb2bc] text-[#ffb2bc]" : "text-[#cdc3d4]"} />
+                    Favoris uniquement
+                  </span>
+                </label>
+              </div>
+
+              {/* Bloc de Statut Réseau */}
               <div className="pt-6 border-t border-white/5 bg-[#1c1b1b]/30 p-4 rounded-xl">
                 <div className="flex items-center space-x-2 text-[#ffb2bc] mb-2">
                   <Zap size={14} />
-                  <span className="text-xs font-bold uppercase tracking-wider">Syndicate Hub</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">Syndicat Hub</span>
                 </div>
                 <p className="text-[11px] text-[#cdc3d4]/65 leading-relaxed font-mono">
-                  Database connected (MAMP OK). Active bid feeds online. Escrow system validated.
+                  Base de données active (MAMP OK). Flux d'enchères connecté. Système d'entiercement sécurisé.
                 </p>
               </div>
 
@@ -330,91 +428,128 @@ function App() {
           </div>
         </aside>
 
-        {/* Product Grid Catalog */}
+        {/* Grille du Catalogue Produits */}
         <section className="col-span-4 lg:col-span-9 space-y-6">
-          
-          {/* Section Header */}
+
+          {/* En-tête de section */}
           <div className="flex justify-between items-end border-b border-white/5 pb-4">
             <div>
               <div className="inline-flex items-center space-x-2.5 bg-[#7e273b]/20 border border-[#ffb2bc]/30 px-3 py-1 rounded-full text-xs text-[#ffb2bc] mb-3">
                 <Compass size={13} className="animate-spin" style={{ animationDuration: '6s' }} />
-                <span>Tokyo Drift Syndicate Marketplace</span>
+                <span>Marché du Syndicat Tokyo Drift</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#e5e2e1] uppercase">
-                Legendary Performance
+                Performance Légendaire
               </h1>
               <p className="text-xs text-[#cdc3d4] mt-1 font-mono">
-                {filteredProducts.length} legends verified under the underground syndicate.
+                {filteredProducts.length} légendes mécaniques vérifiées sous notre charte.
               </p>
             </div>
-            
-            {/* View Mode Toggle */}
+
+            {/* Bascule Grille / Liste */}
             <div className="hidden sm:flex gap-2">
-              <button 
+              <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded border cursor-pointer transition-all ${
-                  viewMode === 'grid' 
-                    ? 'glass-panel text-primary border-primary neon-glow-primary' 
+                className={`p-2 rounded border cursor-pointer transition-all ${viewMode === 'grid'
+                    ? 'glass-panel text-primary border-primary neon-glow-primary'
                     : 'glass-panel border-white/15 text-[#cdc3d4] hover:text-[#e5e2e1]'
-                }`}
+                  }`}
               >
                 <Grid size={16} />
               </button>
-              <button 
+              <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded border cursor-pointer transition-all ${
-                  viewMode === 'list' 
-                    ? 'glass-panel text-primary border-primary neon-glow-primary' 
+                className={`p-2 rounded border cursor-pointer transition-all ${viewMode === 'list'
+                    ? 'glass-panel text-primary border-primary neon-glow-primary'
                     : 'glass-panel border-white/15 text-[#cdc3d4] hover:text-[#e5e2e1]'
-                }`}
+                  }`}
               >
                 <List size={16} />
               </button>
             </div>
           </div>
 
-          {/* Catalog Grid */}
-          <div className={viewMode === 'grid' 
+          {/* Sélecteur de type de vente (Tabs Horizontaux) */}
+          <div className="flex flex-wrap gap-2 p-1 bg-[#1c1b1b]/80 border border-white/5 rounded-xl max-w-2xl">
+            {[
+              { id: 'all', label: 'Tout afficher', icon: Compass },
+              { id: 'auction', label: 'Enchères en direct', icon: Timer },
+              { id: 'negotiation', label: 'Négociations', icon: MessageSquare },
+              { id: 'direct', label: 'Achat direct', icon: ShoppingCart },
+            ].map((tab) => {
+              const TabIcon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setSalesFilter(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${salesFilter === tab.id
+                      ? 'bg-[#bb86fc] text-[#460283] shadow-[0_0_12px_rgba(187,134,252,0.3)]'
+                      : 'text-[#cdc3d4] hover:text-[#e5e2e1] hover:bg-white/5'
+                    }`}
+                >
+                  <TabIcon size={13} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Grille ou Liste de Cartes */}
+          <div className={viewMode === 'grid'
             ? "grid grid-cols-1 md:grid-cols-2 gap-6"
             : "space-y-4"
           }>
             {filteredProducts.length > 0 ? (
               filteredProducts.map((product) => (
-                <div 
+                <div
                   key={product.id}
-                  className={`glass-panel rounded-2xl overflow-hidden group hover:neon-glow-primary transition-all duration-300 border border-white/5 flex flex-col ${
-                    viewMode === 'list' ? 'md:flex-row' : ''
-                  }`}
+                  className={`glass-panel rounded-2xl overflow-hidden group hover:neon-glow-primary transition-all duration-300 border border-white/5 flex flex-col ${viewMode === 'list' ? 'md:flex-row' : ''
+                    }`}
                 >
-                  {/* Photo Container */}
-                  <div className={`relative overflow-hidden bg-[#2a2a2a] ${
-                    viewMode === 'list' ? 'h-48 md:w-72 md:h-full flex-shrink-0' : 'h-56 w-full'
-                  }`}>
-                    <img 
-                      alt={product.model} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85" 
+                  {/* Image de la voiture ou pièce */}
+                  <div className={`relative overflow-hidden bg-[#2a2a2a] ${viewMode === 'list' ? 'h-48 md:w-72 md:h-full flex-shrink-0' : 'h-56 w-full'
+                    }`}>
+                    <img
+                      alt={product.model}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85"
                       src={product.image}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-[#131313]/20 to-transparent"></div>
-                    
-                    {/* Floating Info */}
+
+                    {/* Bouton de mise en favori flottant */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleFavorite(product.id);
+                      }}
+                      className="absolute top-4 right-4 p-2 rounded-full glass-panel border border-white/20 hover:scale-110 active:scale-95 transition-all text-white cursor-pointer hover:bg-white/10 z-10"
+                      title={favorites.includes(product.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
+                    >
+                      <Heart
+                        size={14}
+                        className={favorites.includes(product.id) ? "fill-[#ffb2bc] text-[#ffb2bc] drop-shadow-[0_0_8px_rgba(255,178,188,0.6)]" : "text-white"}
+                      />
+                    </button>
+
+                    {/* Tags Flottants */}
                     <div className="absolute top-4 left-4 flex flex-wrap gap-1.5">
                       {product.verified && (
                         <span className="bg-[#bb86fc] text-[#460283] text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-[0_0_8px_rgba(187,134,252,0.4)] flex items-center gap-1">
-                          <Check size={9} strokeWidth={3} /> Verified
+                          <Check size={9} strokeWidth={3} /> Vérifié
                         </span>
                       )}
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-white/10 ${
-                        product.status === 'Auction Live' 
-                          ? 'bg-secondary-dark/45 text-secondary border-[#ffb2bc]/30' 
-                          : 'bg-[#1c1b1b] text-zinc-300'
-                      }`}>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-white/10 ${product.saleType === 'auction'
+                          ? 'bg-secondary-dark/45 text-[#ffb2bc] border-[#ffb2bc]/30 shadow-[0_0_8px_rgba(255,178,188,0.2)]'
+                          : product.saleType === 'negotiation'
+                            ? 'bg-tertiary/10 text-tertiary border-tertiary/20 shadow-[0_0_8px_rgba(23,222,202,0.2)]'
+                            : 'bg-[#1c1b1b] text-zinc-300 border-zinc-700/50'
+                        }`}>
                         {product.status}
                       </span>
                     </div>
                   </div>
 
-                  {/* Content Container */}
+                  {/* Corps de la Fiche */}
                   <div className="p-5 flex-grow flex flex-col justify-between">
                     <div>
                       <div className="flex justify-between items-start mb-2">
@@ -424,9 +559,9 @@ function App() {
                             {product.year} {product.model}
                           </h3>
                         </div>
-                        {product.category === 'JDM Cars' && (
+                        {product.category === 'Voitures JDM' && (
                           <div className="text-right">
-                            <span className="text-[9px] text-[#cdc3d4]/40 font-mono block">Current Value</span>
+                            <span className="text-[9px] text-[#cdc3d4]/40 font-mono block">Valeur Actuelle</span>
                             <span className="font-extrabold text-[#bb86fc] tracking-tight font-mono">
                               ${product.price.toLocaleString()}
                             </span>
@@ -434,72 +569,72 @@ function App() {
                         )}
                       </div>
 
-                      {/* Technical specifications */}
+                      {/* Caractéristiques techniques issues d'init.sql */}
                       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 my-4 border-t border-b border-white/5 py-3 font-mono text-[11px] text-[#cdc3d4]/70">
                         <div>
-                          <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">CHASSIS / GRADE</span>
+                          <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">CHÂSSIS / GRADE</span>
                           <span className="font-semibold text-zinc-200">{product.chassis}</span>
                         </div>
                         {product.mileage ? (
                           <div>
-                            <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">ODOMETER</span>
+                            <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">KILOMÉTRAGE</span>
                             <span className="font-semibold text-zinc-200">{product.mileage.toLocaleString()} km</span>
                           </div>
                         ) : (
                           <div>
-                            <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">RATING</span>
+                            <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">STATUT</span>
                             <span className="font-semibold text-[#17deca]">{product.status}</span>
                           </div>
                         )}
                         <div>
-                          <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">ENGINE</span>
+                          <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">MOTEUR</span>
                           <span className="font-semibold text-zinc-200">{product.engine}</span>
                         </div>
                         <div>
-                          <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">POWER / TARGET</span>
+                          <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">PUISSANCE / CIBLE</span>
                           <span className="font-semibold text-zinc-200">{product.power}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Interactive Action Block */}
+                    {/* Bloc d'Actions interactives */}
                     <div className="flex justify-between items-center gap-3 mt-4 pt-1">
-                      {product.category !== 'JDM Cars' ? (
+                      {product.category !== 'Voitures JDM' ? (
                         <>
                           <div className="font-extrabold text-base md:text-lg text-zinc-100 font-mono">
                             ${product.price.toLocaleString()}
                           </div>
-                          <button 
+                          <button
                             onClick={handleAddToCart}
                             className="bg-white/10 hover:bg-white/20 text-[#e5e2e1] text-xs font-semibold px-4.5 py-2.5 rounded-lg transition-all cursor-pointer active:scale-95"
                           >
-                            Add to Cart
+                            Ajouter au Panier
                           </button>
                         </>
-                      ) : product.status === 'Auction Live' ? (
+                      ) : product.status === 'Enchère en Cours' ? (
                         <>
                           <div className="flex items-center space-x-1.5 text-xs text-[#ffb2bc] font-semibold animate-pulse">
                             <Timer size={14} />
-                            <span>6j 23h rem.</span>
+                            <span>6j 23h restants</span>
                           </div>
-                          <button 
+                          <button
                             onClick={() => setBiddingProduct(product)}
                             className="neon-border-btn text-xs font-bold px-6 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer active:scale-95"
                           >
-                            Place Bid
+                            Placer une Offre
                           </button>
                         </>
                       ) : (
                         <>
                           <div className="flex items-center space-x-1.5 text-xs text-[#17deca] font-semibold">
                             <Landmark size={14} />
-                            <span>Escrow Verified</span>
+                            <span>Entiercement Vérifié</span>
                           </div>
-                          <button 
+                          <button
                             onClick={() => alert(`Négociation ouverte pour la ${product.model}. Une fois le backend connecté par Nicolas, cette action enverra une offre en base.`)}
                             className="bg-white/10 hover:bg-[#ffb2bc]/15 border border-white/10 hover:border-[#ffb2bc]/30 text-[#e5e2e1] text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95"
                           >
-                            Negot. Price
+                            Négocier le Prix
                           </button>
                         </>
                       )}
@@ -510,8 +645,8 @@ function App() {
             ) : (
               <div className="col-span-full py-16 text-center glass-panel rounded-2xl border border-white/5">
                 <p className="text-zinc-500 text-sm font-mono mb-2">Aucun bolide trouvé dans la base.</p>
-                <button 
-                  onClick={() => { setSearchQuery(''); setSelectedBrand(null); setSelectedCategories(['JDM Cars', 'Performance Parts', 'Accessories']); }}
+                <button
+                  onClick={() => { setSearchQuery(''); setSelectedBrand(null); setSelectedCategories(['Voitures JDM', 'Pièces Performance', 'Accessoires']); }}
                   className="text-[#bb86fc] text-xs font-semibold hover:underline"
                 >
                   Réinitialiser les filtres
@@ -520,38 +655,39 @@ function App() {
             )}
           </div>
 
-          {/* Load More Button */}
+          {/* Pagination Bouton */}
           {filteredProducts.length > 0 && (
             <div className="flex justify-center pt-8">
-              <button 
+              <button
                 onClick={() => alert("Inventaire complet chargé. Gabin ajoutera la pagination lors de l'intégration finale avec Célestin.")}
                 className="neon-border-btn text-xs font-bold px-8 py-3 rounded-full uppercase tracking-widest text-[#e5e2e1] hover:text-[#bb86fc] cursor-pointer active:scale-95"
               >
-                Load More Inventory
+                Charger plus de Véhicules
               </button>
             </div>
           )}
         </section>
       </main>
 
-      {/* Interactive Bidding Modal */}
+      {/* Modal d'Enchère Interactive */}
       {biddingProduct && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop blurring the background */}
-          <div 
-            onClick={() => setBiddingProduct(null)} 
+
+          {/* Arrière-plan flouté */}
+          <div
+            onClick={() => setBiddingProduct(null)}
             className="absolute inset-0 bg-[#000]/70 backdrop-blur-md cursor-pointer"
           ></div>
-          
+
           <div className="glass-panel w-full max-w-lg rounded-2xl overflow-hidden relative z-10 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-200">
-            
-            {/* Modal Header */}
+
+            {/* Titre Modal */}
             <div className="p-6 pb-4 border-b border-white/5 flex justify-between items-center bg-[#1c1b1b]/70">
               <div className="flex items-center space-x-2">
                 <Timer className="text-secondary" size={18} />
-                <h3 className="font-extrabold text-base uppercase tracking-wider">Place Syndicate Bid</h3>
+                <h3 className="font-extrabold text-base uppercase tracking-wider">Placer une Offre du Syndicat</h3>
               </div>
-              <button 
+              <button
                 onClick={() => setBiddingProduct(null)}
                 className="text-[#cdc3d4]/50 hover:text-white p-1 rounded-full hover:bg-white/5 cursor-pointer"
               >
@@ -559,24 +695,24 @@ function App() {
               </button>
             </div>
 
-            {/* Modal Content */}
+            {/* Contenu Modal */}
             <div className="p-6 space-y-5">
-              
+
               {bidSuccess ? (
                 <div className="py-8 text-center space-y-3">
                   <div className="w-16 h-16 bg-[#17deca]/10 border border-[#17deca]/30 rounded-full flex items-center justify-center mx-auto text-[#17deca]">
                     <Check size={28} className="animate-in zoom-in duration-300" />
                   </div>
-                  <h4 className="font-bold text-lg text-zinc-100">Bidding Registered!</h4>
+                  <h4 className="font-bold text-lg text-zinc-100">Enchère Enregistrée !</h4>
                   <p className="text-xs font-mono text-[#cdc3d4]/70">
-                    Votre offre a été enregistrée avec succès. Base de données synchronisée.
+                    Votre offre a été enregistrée avec succès. Base de données simulée synchronisée.
                   </p>
                 </div>
               ) : (
                 <>
                   <div className="flex space-x-4">
-                    <img 
-                      alt={biddingProduct.model} 
+                    <img
+                      alt={biddingProduct.model}
                       className="w-24 h-18 object-cover rounded-lg border border-white/10 flex-shrink-0"
                       src={biddingProduct.image}
                     />
@@ -584,12 +720,12 @@ function App() {
                       <span className="text-[10px] font-mono text-zinc-500 uppercase">{biddingProduct.brand}</span>
                       <h4 className="font-extrabold text-sm text-zinc-200">{biddingProduct.year} {biddingProduct.model}</h4>
                       <p className="text-xs text-[#bb86fc] font-mono font-bold mt-1">
-                        Current Bid: ${biddingProduct.price.toLocaleString()}
+                        Offre Actuelle : ${biddingProduct.price.toLocaleString()}
                       </p>
                     </div>
                   </div>
 
-                  {/* Place Bid Input Form */}
+                  {/* Formulaire d'Enchère */}
                   <form onSubmit={handleBidSubmit} className="space-y-4 pt-2">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold uppercase tracking-wider text-[#cdc3d4]/50 font-mono">
@@ -597,7 +733,7 @@ function App() {
                       </label>
                       <div className="relative rounded-lg border border-white/10 input-glow bg-[#1c1b1b]">
                         <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono font-bold text-sm text-[#cdc3d4]/40">$</span>
-                        <input 
+                        <input
                           required
                           type="number"
                           className="w-full bg-transparent border-none py-3 pl-8 pr-4 text-sm font-mono text-white focus:outline-none focus:ring-0 placeholder-zinc-700"
@@ -608,13 +744,13 @@ function App() {
                         />
                       </div>
                       <span className="text-[10px] font-mono text-zinc-500 block">
-                        Min. Increment: $1 USD. Place custom amounts.
+                        Incrément minimum : 1 $. Saisissez le montant de votre choix.
                       </span>
                     </div>
 
-                    {/* Active Bid History */}
+                    {/* Historique des Enchères du Syndicat */}
                     <div className="bg-[#1c1b1b]/50 p-4 rounded-xl space-y-2.5">
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase block tracking-wider">Direct Syndicate Bidding History</span>
+                      <span className="text-[10px] font-mono text-zinc-500 uppercase block tracking-wider font-semibold">Historique en Direct du Syndicat</span>
                       <div className="space-y-2 max-h-24 overflow-y-auto pr-1">
                         {bidHistory.map((historyItem, i) => (
                           <div key={i} className="flex justify-between items-center text-xs">
@@ -628,12 +764,12 @@ function App() {
                       </div>
                     </div>
 
-                    <button 
+                    <button
                       type="submit"
                       className="w-full bg-[#bb86fc] hover:bg-[#bb86fc]/80 text-[#460283] font-bold text-xs py-3 rounded-lg uppercase tracking-wider cursor-pointer transition-all flex items-center justify-center space-x-1.5 shadow-[0_0_20px_rgba(187,134,252,0.3)]"
                     >
                       <Zap size={14} />
-                      <span>Confirm Syndicate Bid</span>
+                      <span>Confirmer l'Offre</span>
                     </button>
                   </form>
                 </>
@@ -644,51 +780,51 @@ function App() {
         </div>
       )}
 
-      {/* BottomNavBar (Mobile Only) */}
+      {/* Menu mobile (Mobile Only) */}
       <nav className="bg-[#1c1b1b]/90 backdrop-blur-md text-[#bb86fc] fixed bottom-0 w-full z-40 rounded-t-2xl border-t border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] flex justify-around items-center h-16 px-4 lg:hidden">
-        <button 
-          onClick={() => { setSelectedCategories(['JDM Cars', 'Performance Parts', 'Accessories']); setSelectedBrand(null); }}
+        <button
+          onClick={() => { setSelectedCategories(['Voitures JDM', 'Pièces Performance', 'Accessoires']); setSelectedBrand(null); }}
           className="flex flex-col items-center justify-center text-[#bb86fc] filter drop-shadow-[0_0_8px_rgba(187,134,252,0.6)] active:scale-105 transition-transform"
         >
           <Compass size={18} className="mb-0.5" />
-          <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Shop</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Boutique</span>
         </button>
-        <button 
-          onClick={() => { setSelectedCategories(['JDM Cars']); setSelectedBrand(null); }}
+        <button
+          onClick={() => { setSelectedCategories(['Voitures JDM']); setSelectedBrand(null); }}
           className="flex flex-col items-center justify-center text-[#cdc3d4] hover:text-[#bb86fc] active:scale-105 transition-transform"
         >
           <Timer size={18} className="mb-0.5" />
-          <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Bid</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Enchères</span>
         </button>
-        <button 
+        <button
           onClick={() => alert("Messagerie (Paul/Nicolas) - Bientôt en ligne")}
           className="flex flex-col items-center justify-center text-[#cdc3d4] hover:text-[#bb86fc] active:scale-105 transition-transform relative"
         >
           <MessageSquare size={18} className="mb-0.5" />
           <span className="absolute top-1 right-3.5 w-1.5 h-1.5 rounded-full bg-secondary"></span>
-          <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Inbox</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Messagerie</span>
         </button>
-        <button 
+        <button
           onClick={() => alert("Votre Garage - En cours d'implémentation par Célestin (Auth/Profil)")}
           className="flex flex-col items-center justify-center text-[#cdc3d4] hover:text-[#bb86fc] active:scale-105 transition-transform"
         >
           <User size={18} className="mb-0.5" />
-          <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Profile</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Profil</span>
         </button>
       </nav>
 
-      {/* Footer */}
+      {/* Pied de page */}
       <footer className="bg-[#0e0e0e] border-t border-white/5 py-12 text-[#cdc3d4]/40 text-xs font-mono">
         <div className="max-w-[1440px] mx-auto px-4 md:px-16 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
           <p>© 2026 Mercato Nova. Tous droits réservés.</p>
           <div className="flex space-x-6 text-[10px] uppercase">
-            <span className="hover:text-white cursor-pointer">Conditions</span>
-            <span className="hover:text-white cursor-pointer">Escrow Shield</span>
-            <span className="hover:text-white cursor-pointer">API Status</span>
+            <span className="hover:text-white cursor-pointer">Conditions d'utilisation</span>
+            <span className="hover:text-white cursor-pointer">Protection d'Entiercement</span>
+            <span className="hover:text-white cursor-pointer">Statut API</span>
           </div>
           <div className="flex items-center space-x-2 text-[10px] uppercase text-[#ffb2bc]">
             <Shield size={12} />
-            <span>Syndicate Secure Escrow Shield</span>
+            <span>Bouclier d'Entiercement Sécurisé du Syndicat</span>
           </div>
         </div>
       </footer>
