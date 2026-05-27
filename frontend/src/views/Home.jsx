@@ -110,11 +110,32 @@ function Home({ user, onLogout }) {
   const [selectedCategories, setSelectedCategories] = useState(['Voitures JDM', 'Pièces Performance', 'Accessoires']);
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
-  const [cartCount, setCartCount] = useState(0);
   const [favorites, setFavorites] = useState([]); // Tableau contenant les IDs des produits favoris
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false); // Filtre favoris uniquement
   const [salesFilter, setSalesFilter] = useState('all'); // 'all', 'auction', 'negotiation', 'direct'
-  const [showProfileMenu, setShowProfileMenu] = useState(false); // Menu déroulant de profil
+  
+  // États de Panier Premium
+  const [cartItems, setCartItems] = useState([]);
+  const [showCartMenu, setShowCartMenu] = useState(false);
+
+  // États de Profil & Menus Déroulants opaques (pour éviter les overlapping bizarres)
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
+  const [showMessagesMenu, setShowMessagesMenu] = useState(false);
+
+  // Données de Notifications
+  const [notifications, setNotifications] = useState([
+    { id: 1, text: "Enchère Skyline R34 dépassée par takumi_86", time: "Il y a 10 min", read: false },
+    { id: 2, text: "Nouveau message de Keiichi Tsuchiya", time: "Il y a 2 heures", read: false },
+    { id: 3, text: "Entiercement validé pour Jantes GP 18\"", time: "Hier", read: true }
+  ]);
+
+  // Données de Messagerie
+  const [messages, setMessages] = useState([
+    { id: 1, sender: "Takumi Fujiwara", snippet: "Le turbo HKS est encore dispo ?", time: "18:42", online: true },
+    { id: 2, sender: "Keiichi Tsuchiya", snippet: "Je pose une offre sur ta R34.", time: "15:20", online: false },
+    { id: 3, sender: "Célestin (Admin)", snippet: "Réseau crypté opérationnel.", time: "Hier", online: true }
+  ]);
 
   // États de l'enchère interactive
   const [biddingProduct, setBiddingProduct] = useState(null);
@@ -124,6 +145,39 @@ function Home({ user, onLogout }) {
     { bidder: 'keiichi_tsuchiya', amount: 180000, date: 'Il y a 10 min' },
     { bidder: 'takumi_86', amount: 175000, date: 'Il y a 2 heures' }
   ]);
+
+  // Fermer les autres menus lors de l'ouverture d'un nouveau menu
+  const toggleNotifications = () => {
+    setShowNotificationsMenu(!showNotificationsMenu);
+    setShowMessagesMenu(false);
+    setShowCartMenu(false);
+    setShowProfileMenu(false);
+  };
+
+  const toggleMessages = () => {
+    setShowMessagesMenu(!showMessagesMenu);
+    setShowNotificationsMenu(false);
+    setShowCartMenu(false);
+    setShowProfileMenu(false);
+  };
+
+  const toggleCart = () => {
+    setShowCartMenu(!showCartMenu);
+    setShowNotificationsMenu(false);
+    setShowMessagesMenu(false);
+    setShowProfileMenu(false);
+  };
+
+  const toggleProfile = () => {
+    setShowProfileMenu(!showProfileMenu);
+    setShowNotificationsMenu(false);
+    setShowMessagesMenu(false);
+    setShowCartMenu(false);
+  };
+
+  const handleReadNotification = (id) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
 
   // Ajouter / Retirer des favoris
   const toggleFavorite = (productId) => {
@@ -197,9 +251,16 @@ function Home({ user, onLogout }) {
     }, 1800);
   };
 
-  const handleAddToCart = () => {
-    setCartCount(prev => prev + 1);
+  const handleAddToCart = (product) => {
+    setCartItems(prev => [...prev, product]);
+    // Effet visuel immédiat dans la console ou via notification
   };
+
+  const handleRemoveFromCart = (productId) => {
+    setCartItems(prev => prev.filter(item => item.id !== productId));
+  };
+
+  const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
   return (
     <div className="min-h-screen bg-[#131313] text-[#e5e2e1] antialiased overflow-x-hidden font-sans pt-24 selection:bg-primary selection:text-[#460283]">
@@ -255,14 +316,103 @@ function Home({ user, onLogout }) {
             </div>
 
             <div className="flex gap-2.5">
-              <button className="text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5 p-2 rounded-full transition-all relative active:scale-95">
-                <Bell size={20} />
-                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-              </button>
-              <button className="text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5 p-2 rounded-full transition-all relative active:scale-95">
-                <MessageSquare size={20} />
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-secondary"></span>
-              </button>
+              
+              {/* Menu Déroulant Notifications */}
+              <div className="relative">
+                <button 
+                  onClick={toggleNotifications}
+                  className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${
+                    showNotificationsMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
+                  }`}
+                  title="Notifications"
+                >
+                  <Bell size={20} />
+                  {unreadNotificationsCount > 0 && (
+                    <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(187,134,252,0.6)]"></span>
+                  )}
+                </button>
+
+                {showNotificationsMenu && (
+                  <>
+                    <div onClick={() => setShowNotificationsMenu(false)} className="fixed inset-0 z-30"></div>
+                    <div className="absolute right-0 mt-3 w-80 rounded-xl border border-white/10 bg-[#1c1b1b] py-3 shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-40 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
+                      <div className="px-4 pb-2 border-b border-white/5 flex justify-between items-center">
+                        <span className="text-[10px] font-mono font-bold text-[#cdc3d4]/50 uppercase tracking-widest">Flux Réseau</span>
+                        <button 
+                          onClick={() => setNotifications(notifications.map(n => ({ ...n, read: true })))}
+                          className="text-[9px] font-mono text-[#bb86fc] hover:underline font-bold"
+                        >
+                          Tout lire
+                        </button>
+                      </div>
+                      
+                      <div className="max-h-64 overflow-y-auto mt-1 divide-y divide-white/5">
+                        {notifications.map(n => (
+                          <div 
+                            key={n.id} 
+                            onClick={() => handleReadNotification(n.id)}
+                            className={`px-4 py-3 hover:bg-white/5 transition-all relative cursor-pointer ${!n.read ? 'bg-primary/5' : ''}`}
+                          >
+                            {!n.read && <span className="absolute top-3.5 left-2 w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>}
+                            <p className="text-xs text-zinc-200 pl-1">{n.text}</p>
+                            <span className="text-[9px] font-mono text-zinc-500 block mt-1 pl-1">{n.time}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Menu Déroulant Messagerie */}
+              <div className="relative">
+                <button 
+                  onClick={toggleMessages}
+                  className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${
+                    showMessagesMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
+                  }`}
+                  title="Messages"
+                >
+                  <MessageSquare size={20} />
+                  <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                </button>
+
+                {showMessagesMenu && (
+                  <>
+                    <div onClick={() => setShowMessagesMenu(false)} className="fixed inset-0 z-30"></div>
+                    <div className="absolute right-0 mt-3 w-80 rounded-xl border border-white/10 bg-[#1c1b1b] py-3 shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-40 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
+                      <div className="px-4 pb-2 border-b border-white/5 flex justify-between items-center">
+                        <span className="text-[10px] font-mono font-bold text-[#cdc3d4]/50 uppercase tracking-widest">Messagerie</span>
+                        <span className="text-[9px] font-mono text-[#17deca] font-bold">3 Actifs</span>
+                      </div>
+                      
+                      <div className="max-h-64 overflow-y-auto mt-1 divide-y divide-white/5">
+                        {messages.map(m => (
+                          <div 
+                            key={m.id} 
+                            onClick={() => { setShowMessagesMenu(false); alert(`Discussion ouverte avec ${m.sender} (simulation)`); }} 
+                            className="px-4 py-3 hover:bg-white/5 transition-all flex items-start gap-3 cursor-pointer"
+                          >
+                            <div className="relative flex-shrink-0">
+                              <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs text-[#bb86fc]">
+                                {m.sender.split(' ').map(n=>n[0]).join('')}
+                              </div>
+                              {m.online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#17deca] border-2 border-[#1c1b1b]"></span>}
+                            </div>
+                            <div className="flex-grow min-w-0">
+                              <div className="flex justify-between items-baseline mb-0.5">
+                                <h4 className="text-xs font-bold text-zinc-200 truncate">{m.sender}</h4>
+                                <span className="text-[9px] font-mono text-zinc-500">{m.time}</span>
+                              </div>
+                              <p className="text-[11px] text-[#cdc3d4]/70 truncate">{m.snippet}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
 
               {/* Bouton Favoris Interactif */}
               <button
@@ -279,20 +429,83 @@ function Home({ user, onLogout }) {
                 )}
               </button>
 
-              {/* Panier Interactif */}
-              <button className="text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5 p-2 rounded-full transition-all relative active:scale-95">
-                <ShoppingCart size={20} />
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-secondary text-[9px] text-[#400013] font-bold flex items-center justify-center animate-bounce shadow-[0_0_8px_rgba(255,178,188,0.5)]">
-                    {cartCount}
-                  </span>
-                )}
-              </button>
-
-              {/* Menu Profil avec Dropdown */}
+              {/* Menu Déroulant Panier */}
               <div className="relative">
                 <button 
-                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  onClick={toggleCart}
+                  className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${
+                    showCartMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
+                  }`}
+                  title="Panier"
+                >
+                  <ShoppingCart size={20} />
+                  {cartItems.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-secondary text-[9px] text-[#400013] font-bold flex items-center justify-center shadow-[0_0_8px_rgba(255,178,188,0.5)]">
+                      {cartItems.length}
+                    </span>
+                  )}
+                </button>
+
+                {showCartMenu && (
+                  <>
+                    <div onClick={() => setShowCartMenu(false)} className="fixed inset-0 z-30"></div>
+                    <div className="absolute right-0 mt-3 w-80 rounded-xl border border-white/10 bg-[#1c1b1b] py-3 shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-40 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
+                      <div className="px-4 pb-2 border-b border-white/5 flex justify-between items-center">
+                        <span className="text-[10px] font-mono font-bold text-[#cdc3d4]/50 uppercase tracking-widest">Panier</span>
+                        <span className="text-[9px] font-mono text-zinc-400 font-bold">{cartItems.length} article{cartItems.length > 1 ? 's' : ''}</span>
+                      </div>
+                      
+                      <div className="max-h-64 overflow-y-auto mt-1 divide-y divide-white/5">
+                        {cartItems.length === 0 ? (
+                          <div className="px-4 py-8 text-center space-y-2">
+                            <ShoppingCart size={24} className="text-zinc-600 mx-auto" />
+                            <p className="text-xs text-zinc-500">Votre panier est vide.</p>
+                          </div>
+                        ) : (
+                          cartItems.map((item, index) => (
+                            <div key={index} className="px-4 py-3 hover:bg-white/5 transition-all flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-3 min-w-0">
+                                <img src={item.image} alt={item.model} className="w-10 h-8 object-cover rounded border border-white/10 flex-shrink-0" />
+                                <div className="min-w-0">
+                                  <h4 className="text-xs font-bold text-zinc-200 truncate">{item.model}</h4>
+                                  <span className="text-[10px] font-mono text-[#bb86fc]">${item.price.toLocaleString()}</span>
+                                </div>
+                              </div>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleRemoveFromCart(item.id); }}
+                                className="text-zinc-500 hover:text-red-400 p-1 cursor-pointer transition-colors"
+                                title="Retirer"
+                              >
+                                <X size={13} />
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {cartItems.length > 0 && (
+                        <div className="px-4 pt-3 border-t border-white/5 mt-2 space-y-2.5">
+                          <div className="flex justify-between text-xs font-mono">
+                            <span className="text-zinc-400">Total :</span>
+                            <span className="font-bold text-[#17deca]">${cartItems.reduce((acc, item) => acc + item.price, 0).toLocaleString()}</span>
+                          </div>
+                          <button 
+                            onClick={() => { setShowCartMenu(false); alert("Panier validé ! Célestin mettra bientôt en place le tunnel de paiement de l'entiercement."); }}
+                            className="w-full bg-[#bb86fc] hover:bg-[#bb86fc]/80 text-[#460283] font-bold text-[10px] font-mono py-2.5 rounded uppercase tracking-wider text-center cursor-pointer transition-colors block"
+                          >
+                            Valider la commande
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Menu Profil avec Dropdown - OPAQUE (bg-[#1c1b1b] sans transparence overlapping) */}
+              <div className="relative">
+                <button 
+                  onClick={toggleProfile}
                   className={`p-2 rounded-full transition-all active:scale-95 cursor-pointer ${
                     showProfileMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
                   }`}
@@ -301,7 +514,7 @@ function Home({ user, onLogout }) {
                   <User size={20} />
                 </button>
 
-                {/* Dropdown Menu de Profil */}
+                {/* Dropdown Menu de Profil OPAQUE */}
                 {showProfileMenu && (
                   <>
                     {/* Backdrop invisible pour fermer le menu lors d'un clic en dehors */}
@@ -310,7 +523,7 @@ function Home({ user, onLogout }) {
                       className="fixed inset-0 z-30"
                     ></div>
                     
-                    <div className="absolute right-0 mt-3 w-52 rounded-xl glass-panel border border-white/10 bg-[#1c1b1b]/95 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-40 animate-in fade-in slide-in-from-top-2 duration-150">
+                    <div className="absolute right-0 mt-3 w-52 rounded-xl border border-white/10 bg-[#1c1b1b] py-2 shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-40 animate-in fade-in slide-in-from-top-2 duration-150">
                       
                       {/* En-tête de Profil Premium */}
                       <div className="px-4 py-2.5 border-b border-white/5 mb-1.5 text-[10px] font-mono">
@@ -367,7 +580,7 @@ function Home({ user, onLogout }) {
                         onClick={() => { setShowProfileMenu(false); onLogout(); }}
                         className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-zinc-400 hover:text-red-400 hover:bg-red-500/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1.5 pt-2"
                       >
-                        <LogOut size={14} className="text-zinc-500 group-hover:text-red-400" />
+                        <LogOut size={14} className="text-zinc-500" />
                         <span>Se déconnecter</span>
                       </button>
 
@@ -642,7 +855,7 @@ function Home({ user, onLogout }) {
                             ${product.price.toLocaleString()}
                           </div>
                           <button
-                            onClick={handleAddToCart}
+                            onClick={() => handleAddToCart(product)}
                             className="bg-white/10 hover:bg-white/20 text-[#e5e2e1] text-xs font-semibold px-4.5 py-2.5 rounded-lg transition-all cursor-pointer active:scale-95"
                           >
                             Ajouter au Panier
