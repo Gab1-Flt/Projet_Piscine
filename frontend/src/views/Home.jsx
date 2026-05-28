@@ -2,10 +2,266 @@ import React, { useState } from 'react';
 import {
   Search, Bell, MessageSquare, User, Grid, List, Shield,
   ShoppingCart, Timer, SlidersHorizontal, ArrowUpRight,
-  Check, X, Zap, Cpu, Compass, Landmark, Heart, LogOut
+  Check, X, Zap, Cpu, Compass, Landmark, Heart, LogOut,
+  Trash2, Pencil, Plus, Users, FileCheck, BarChart3, Ban,
+  AlertTriangle, UserCheck, Crown
 } from 'lucide-react';
+import { adminStats, initialPendingListings, mockUsers } from '../data/mockData';
 
-function Home({ user, onLogout }) {
+const roleLabels = {
+  utilisateur: 'Utilisateur',
+  admin: 'Administrateur',
+  directeur: 'Directeur',
+};
+
+const formatMoney = (amount) => `$${Number(amount || 0).toLocaleString()}`;
+
+function AdminWorkspace({
+  user,
+  activePanel,
+  setActivePanel,
+  users,
+  pendingListings,
+  products,
+  onApproveListing,
+  onRejectListing,
+  onBanUser,
+  onDeleteUser,
+  onDeleteProduct,
+  onOpenEdit,
+  onStartAdd,
+}) {
+  const isDirector = user?.role === 'directeur';
+  const visibleUsers = isDirector ? users : users.filter((account) => account.role !== 'directeur');
+  const visibleProducts = products;
+
+  const tabs = [
+    { id: 'catalog', label: 'Catalogue', icon: Compass },
+    { id: 'overview', label: 'Statistiques', icon: BarChart3 },
+    { id: 'pending', label: 'Annonces a valider', icon: FileCheck },
+    { id: 'accounts', label: 'Gerer les comptes', icon: Users },
+    ...(isDirector ? [{ id: 'director', label: 'Espace directeur', icon: Crown }] : []),
+  ];
+
+  return (
+    <main className="max-w-[1440px] mx-auto px-4 md:px-16 py-8 space-y-8">
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-5 border-b border-white/5 pb-6">
+        <div>
+          <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary px-3 py-1 rounded-full text-[10px] font-mono uppercase tracking-widest mb-3">
+            <Shield size={13} />
+            {isDirector ? 'Direction generale' : 'System metrics & moderation control'}
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tight text-[#e5e2e1]">
+            {isDirector ? 'Espace Directeur' : 'Espace Admin'}
+          </h1>
+          <p className="text-sm text-[#cdc3d4]/70 font-mono mt-2">
+            Connecte : {user?.email} - role {roleLabels[user?.role]}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((tab) => {
+            const TabIcon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActivePanel(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-[10px] font-mono font-bold uppercase tracking-wider transition-all ${activePanel === tab.id ? 'bg-secondary text-[#400013] border-secondary' : 'border-white/10 text-[#cdc3d4] hover:text-white hover:bg-white/5'}`}
+              >
+                <TabIcon size={14} />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {(activePanel === 'overview' || activePanel === 'director') && (
+        <section className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              { label: 'Utilisateurs actifs', value: adminStats.activeUsers.toLocaleString(), hint: '+12.5% cette semaine', icon: Users },
+              { label: 'Volume quotidien', value: `¥${(adminStats.dailyVolume / 1000000).toFixed(1)}M`, hint: '+8.2% cette semaine', icon: Landmark },
+              { label: 'Annonces signalees', value: adminStats.flaggedListings, hint: 'Action requise', icon: AlertTriangle },
+            ].map((metric) => {
+              const MetricIcon = metric.icon;
+              return (
+                <div key={metric.label} className="glass-panel rounded-lg p-6 border border-white/10 min-h-[170px]">
+                  <div className="flex justify-between items-start text-[#cdc3d4] font-mono text-xs">
+                    <span>{metric.label}</span>
+                    <MetricIcon className="text-primary" size={20} />
+                  </div>
+                  <div className="text-4xl font-black mt-8">{metric.value}</div>
+                  <div className="text-[11px] font-mono text-tertiary mt-4">{metric.hint}</div>
+                  <div className="h-10 mt-4 rounded bg-gradient-to-r from-primary/10 via-secondary/20 to-tertiary/10 border border-white/5"></div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div className="glass-panel rounded-lg p-6 border border-white/10">
+              <h2 className="text-xl font-extrabold mb-4 flex items-center gap-2">
+                <Plus className="text-tertiary" size={18} />
+                Gestion des ventes
+              </h2>
+              <p className="text-xs text-[#cdc3d4]/70 font-mono mb-4">
+                Un administrateur peut ajouter, supprimer ou modifier une annonce. Le prix reste verrouille en modification.
+              </p>
+              <button
+                onClick={onStartAdd}
+                className="bg-tertiary text-[#003b35] hover:bg-tertiary/90 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2"
+              >
+                <Plus size={14} />
+                Ajouter une vente
+              </button>
+            </div>
+
+            <div className="glass-panel rounded-lg p-6 border border-white/10">
+              <h2 className="text-xl font-extrabold mb-4 flex items-center gap-2">
+                <FileCheck className="text-secondary" size={18} />
+                File de moderation
+              </h2>
+              <div className="flex items-center justify-between text-sm font-mono">
+                <span className="text-[#cdc3d4]/70">Annonces en attente</span>
+                <span className="text-secondary font-bold">{pendingListings.length}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm font-mono mt-3">
+                <span className="text-[#cdc3d4]/70">Comptes bannis</span>
+                <span className="text-red-300 font-bold">{users.filter((account) => account.status === 'banned').length}</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {activePanel === 'pending' && (
+        <section className="space-y-5">
+          <h2 className="text-2xl font-extrabold flex items-center gap-3">
+            <FileCheck className="text-secondary" />
+            Nouvelles annonces a valider
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {pendingListings.map((listing) => (
+              <article key={listing.id} className="glass-panel rounded-lg overflow-hidden border border-white/10">
+                <img src={listing.image} alt={listing.model} className="h-44 w-full object-cover opacity-90" />
+                <div className="p-5 space-y-4">
+                  <div>
+                    <div className="text-[10px] font-mono text-secondary uppercase tracking-widest">{listing.brand}</div>
+                    <h3 className="text-lg font-extrabold">{listing.year} {listing.model}</h3>
+                    <p className="text-primary font-mono font-bold">{formatMoney(listing.price)}</p>
+                  </div>
+                  <div className="rounded-lg bg-[#1c1b1b] border border-white/10 p-3 text-[11px] font-mono text-[#cdc3d4]/80 space-y-1.5">
+                    <div>Vendeur : {listing.sellerName}</div>
+                    <div>Email : {listing.sellerEmail}</div>
+                    <div>Tel : {listing.sellerPhone}</div>
+                    <div>KYC : <span className={listing.identityStatus === 'validee' ? 'text-tertiary' : listing.identityStatus === 'refusee' ? 'text-red-300' : 'text-secondary'}>{listing.identityStatus}</span></div>
+                    <div>Criteres CI : {listing.idCardCriteria.join(', ')}</div>
+                  </div>
+                  <p className="text-xs text-[#cdc3d4]/70">{listing.reason}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button onClick={() => onApproveListing(listing)} className="bg-tertiary text-[#003b35] rounded-lg py-2 text-[10px] font-bold uppercase">Accepter</button>
+                    <button onClick={() => onRejectListing(listing.id)} className="border border-secondary/40 text-secondary rounded-lg py-2 text-[10px] font-bold uppercase hover:bg-secondary/10">Refuser</button>
+                  </div>
+                </div>
+              </article>
+            ))}
+            {pendingListings.length === 0 && (
+              <div className="col-span-full glass-panel rounded-lg border border-white/10 p-10 text-center text-[#cdc3d4]/70 font-mono">
+                Aucune annonce en attente. La file de moderation est vide.
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {activePanel === 'accounts' && (
+        <section className="space-y-5">
+          <h2 className="text-2xl font-extrabold flex items-center gap-3">
+            <Users className="text-primary" />
+            Gestion des comptes
+          </h2>
+          <div className="glass-panel rounded-lg border border-white/10 overflow-hidden">
+            <div className="grid grid-cols-12 gap-4 px-5 py-4 bg-[#1c1b1b] text-[10px] font-mono uppercase tracking-widest text-[#cdc3d4]/60">
+              <span className="col-span-3">Utilisateur</span>
+              <span className="col-span-3">Contact</span>
+              <span className="col-span-2">Role</span>
+              <span className="col-span-2">KYC / Statut</span>
+              <span className="col-span-2 text-right">Actions</span>
+            </div>
+            {visibleUsers.map((account) => (
+              <div key={account.email} className="grid grid-cols-12 gap-4 px-5 py-4 border-t border-white/5 items-center text-sm">
+                <div className="col-span-3">
+                  <div className="font-bold">{account.firstName} {account.lastName}</div>
+                  <div className="text-[11px] text-[#cdc3d4]/50 font-mono">@{account.username}</div>
+                </div>
+                <div className="col-span-3 text-[12px] font-mono text-[#cdc3d4]/80">
+                  <div>{account.email}</div>
+                  <div>{account.phone}</div>
+                  <div>{account.city}</div>
+                </div>
+                <div className="col-span-2">
+                  <span className="px-2 py-1 rounded border border-white/10 text-[10px] font-mono uppercase">{roleLabels[account.role]}</span>
+                </div>
+                <div className="col-span-2 text-[11px] font-mono">
+                  <div className={account.status === 'banned' ? 'text-red-300' : 'text-tertiary'}>{account.status}</div>
+                  <div className="text-[#cdc3d4]/60">{account.idCardStatus}</div>
+                  {isDirector && <div className="text-secondary">{account.bankCard}</div>}
+                </div>
+                <div className="col-span-2 flex justify-end gap-2">
+                  <button
+                    onClick={() => onBanUser(account.email)}
+                    disabled={account.role === 'directeur' || account.email === user?.email}
+                    className="p-2 rounded border border-secondary/30 text-secondary hover:bg-secondary/10 disabled:opacity-30"
+                    title="Bannir"
+                  >
+                    <Ban size={14} />
+                  </button>
+                  <button
+                    onClick={() => onDeleteUser(account.email)}
+                    disabled={account.role === 'directeur' || account.email === user?.email}
+                    className="p-2 rounded border border-red-400/30 text-red-300 hover:bg-red-500/10 disabled:opacity-30"
+                    title="Supprimer"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {activePanel === 'director' && (
+        <section className="space-y-5">
+          <h2 className="text-2xl font-extrabold flex items-center gap-3">
+            <Crown className="text-tertiary" />
+            Controle total des annonces
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+            {visibleProducts.map((product) => (
+              <article key={product.id} className="glass-panel rounded-lg border border-white/10 overflow-hidden">
+                <img src={product.image} alt={product.model} className="h-40 w-full object-cover opacity-85" />
+                <div className="p-4 space-y-3">
+                  <div>
+                    <div className="text-[10px] font-mono text-secondary uppercase">{product.brand}</div>
+                    <h3 className="font-extrabold">{product.year} {product.model}</h3>
+                    <p className="text-primary font-mono text-sm">{formatMoney(product.price)}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={() => onOpenEdit(product)} className="flex-1 border border-primary/40 text-primary rounded-lg py-2 text-[10px] font-bold uppercase">Modifier</button>
+                    <button onClick={() => onDeleteProduct(product.id)} className="flex-1 border border-red-400/40 text-red-300 rounded-lg py-2 text-[10px] font-bold uppercase">Supprimer</button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
+    </main>
+  );
+}
+
+function Home({ user, onLogout, onLoginRequest }) {
   // Jeu de données des produits traduit en français, en lien avec init.sql
   const initialProducts = [
     {
@@ -105,7 +361,43 @@ function Home({ user, onLogout }) {
   ];
 
   // Gestion des états
+  const isAuthenticated = Boolean(user);
+  const isAdmin = user?.role === 'admin';
+  const isDirector = user?.role === 'directeur';
+  const canModerate = isAdmin || isDirector;
+
   const [products, setProducts] = useState(initialProducts);
+  const [pendingListings, setPendingListings] = useState(initialPendingListings);
+  const [adminUsers, setAdminUsers] = useState(() => {
+    try {
+      const bannedEmails = JSON.parse(localStorage.getItem('mn_banned_emails') || '[]');
+      const deletedEmails = JSON.parse(localStorage.getItem('mn_deleted_emails') || '[]');
+      return mockUsers
+        .filter((account) => !deletedEmails.includes(account.email))
+        .map((account) => bannedEmails.includes(account.email) ? { ...account, status: 'banned' } : account);
+    } catch (e) {
+      return mockUsers;
+    }
+  });
+  const [activePanel, setActivePanel] = useState('catalog');
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [productDraft, setProductDraft] = useState(null);
+  const [addingProduct, setAddingProduct] = useState(false);
+  const [newProductDraft, setNewProductDraft] = useState({
+    brand: 'Nissan',
+    model: 'Silvia S15 Spec-R',
+    year: 2001,
+    price: 52000,
+    mileage: 79000,
+    chassis: 'S15-088451',
+    engine: 'SR20DET',
+    power: '250 ch',
+    image: 'https://images.unsplash.com/photo-1616422285623-13ff0162193c?auto=format&fit=crop&w=800&q=80',
+    category: 'Voitures JDM',
+    status: 'Achat Direct',
+    saleType: 'direct',
+    verified: true
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState(['Voitures JDM', 'Pièces Performance', 'Accessoires']);
   const [selectedBrand, setSelectedBrand] = useState(null);
@@ -145,6 +437,89 @@ function Home({ user, onLogout }) {
     { bidder: 'keiichi_tsuchiya', amount: 180000, date: 'Il y a 10 min' },
     { bidder: 'takumi_86', amount: 175000, date: 'Il y a 2 heures' }
   ]);
+
+  const requestAuthentication = (message = "Connexion requise pour continuer.") => {
+    alert(message);
+    onLoginRequest?.();
+    return false;
+  };
+
+  const writeStoredList = (key, email) => {
+    try {
+      const current = JSON.parse(localStorage.getItem(key) || '[]');
+      localStorage.setItem(key, JSON.stringify(Array.from(new Set([...current, email]))));
+    } catch (e) {
+      localStorage.setItem(key, JSON.stringify([email]));
+    }
+  };
+
+  const handleDeleteProduct = (productId) => {
+    if (!canModerate) return;
+    setProducts(prev => prev.filter(product => product.id !== productId));
+  };
+
+  const handleOpenEditProduct = (product) => {
+    if (!canModerate) return;
+    setEditingProduct(product);
+    setProductDraft({ ...product });
+  };
+
+  const handleSaveProductDraft = () => {
+    if (!productDraft || !editingProduct) return;
+    setProducts(prev => prev.map(product => (
+      product.id === editingProduct.id
+        ? { ...productDraft, price: editingProduct.price }
+        : product
+    )));
+    setEditingProduct(null);
+    setProductDraft(null);
+  };
+
+  const handleAddProduct = () => {
+    if (!canModerate) return;
+    const nextId = Math.max(...products.map(product => product.id), 0) + 1;
+    setProducts(prev => [{ ...newProductDraft, id: nextId }, ...prev]);
+    setAddingProduct(false);
+  };
+
+  const handleApproveListing = (listing) => {
+    if (!canModerate) return;
+    const nextId = Math.max(...products.map(product => product.id), 0) + 1;
+    setProducts(prev => [{
+      id: nextId,
+      brand: listing.brand,
+      model: listing.model,
+      year: listing.year,
+      price: listing.price,
+      mileage: listing.mileage,
+      chassis: listing.category === 'Voitures JDM' ? 'KYC vendeur approuve' : 'Piece verifiee',
+      engine: listing.category === 'Voitures JDM' ? 'Dossier import complet' : 'Compatibilite confirmee',
+      power: listing.identityStatus === 'validee' ? 'Vendeur verifie' : 'Validation admin',
+      image: listing.image,
+      category: listing.category,
+      status: listing.saleType === 'auction' ? 'Enchere en Cours' : listing.saleType === 'negotiation' ? 'Negociation' : 'Achat Direct',
+      saleType: listing.saleType,
+      verified: true
+    }, ...prev]);
+    setPendingListings(prev => prev.filter(item => item.id !== listing.id));
+  };
+
+  const handleRejectListing = (listingId) => {
+    if (!canModerate) return;
+    setPendingListings(prev => prev.filter(item => item.id !== listingId));
+  };
+
+  const handleBanUser = (email) => {
+    if (!canModerate) return;
+    writeStoredList('mn_banned_emails', email);
+    setAdminUsers(prev => prev.map(account => account.email === email ? { ...account, status: 'banned' } : account));
+  };
+
+  const handleDeleteUser = (email) => {
+    if (!canModerate) return;
+    writeStoredList('mn_deleted_emails', email);
+    setAdminUsers(prev => prev.filter(account => account.email !== email));
+  };
 
   // Fermer les autres menus lors de l'ouverture d'un nouveau menu
   const toggleNotifications = () => {
@@ -225,6 +600,10 @@ function Home({ user, onLogout }) {
   // Soumission d'une enchère
   const handleBidSubmit = (e) => {
     e.preventDefault();
+    if (!isAuthenticated) {
+      requestAuthentication("Vous devez etre connecte pour encherir.");
+      return;
+    }
     const numericBid = parseFloat(bidAmount);
     if (isNaN(numericBid) || numericBid <= biddingProduct.price) {
       alert(`Votre offre doit être strictement supérieure à l'offre actuelle ($${biddingProduct.price.toLocaleString()})`);
@@ -252,6 +631,10 @@ function Home({ user, onLogout }) {
   };
 
   const handleAddToCart = (product) => {
+    if (!isAuthenticated) {
+      requestAuthentication("Vous devez etre connecte pour acheter une voiture ou une piece.");
+      return;
+    }
     setCartItems(prev => [...prev, product]);
     // Effet visuel immédiat dans la console ou via notification
   };
@@ -528,7 +911,9 @@ function Home({ user, onLogout }) {
                       {/* En-tête de Profil Premium */}
                       <div className="px-4 py-2.5 border-b border-white/5 mb-1.5 text-[10px] font-mono">
                         <span className="block text-[#cdc3d4]/40 font-bold uppercase tracking-wider text-[8px]">Réseau Pilote</span>
-                        <span className="text-zinc-200 truncate block mt-0.5" title={user?.email}>{user?.email}</span>
+                        <span className="text-zinc-200 truncate block mt-0.5" title={user?.email || 'Invite'}>
+                          {user?.email || 'Invite - consultation libre'}
+                        </span>
                         {user?.role === 'admin' ? (
                           <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded bg-secondary/10 text-secondary border border-secondary/20 text-[8px] font-bold uppercase tracking-wider shadow-[0_0_8px_rgba(255,178,188,0.15)]">
                             <Shield size={8} /> Admin VIP
@@ -539,6 +924,16 @@ function Home({ user, onLogout }) {
                           </span>
                         )}
                       </div>
+
+                      {!user && (
+                        <button 
+                          onClick={() => { setShowProfileMenu(false); onLoginRequest?.(); }}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-primary hover:bg-primary/5 transition-all text-left cursor-pointer"
+                        >
+                          <UserCheck size={14} className="text-primary" />
+                          <span>Se connecter</span>
+                        </button>
+                      )}
 
                       <button 
                         onClick={() => { setShowProfileMenu(false); alert("Ouverture de l'espace Mon compte (Célestin / Profil)"); }}
@@ -565,7 +960,7 @@ function Home({ user, onLogout }) {
                       </button>
 
                       {/* Lien Administrateur Conditionnel */}
-                      {user?.role === 'admin' && (
+                      {canModerate && (
                         <button 
                           onClick={() => { setShowProfileMenu(false); alert("Accès à l'Espace d'Administration Système. Bienvenue Gabin !"); }}
                           className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-secondary hover:bg-secondary/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1 pt-1.5"
@@ -594,10 +989,68 @@ function Home({ user, onLogout }) {
       </nav>
 
       {/* Zone de contenu principale */}
+      {activePanel === 'catalog' ? (
       <main className="max-w-[1440px] mx-auto px-4 md:px-16 py-8 grid grid-cols-4 lg:grid-cols-12 gap-6">
 
         {/* Panneau de Filtres Latéral */}
         <aside className="col-span-4 lg:col-span-3 space-y-6">
+          {canModerate && (
+            <div className="glass-panel rounded-2xl p-5 border border-secondary/20">
+              <div className="flex items-center gap-2 text-secondary mb-3">
+                {isDirector ? <Crown size={18} /> : <Shield size={18} />}
+                <h3 className="font-bold text-sm uppercase tracking-wider">{isDirector ? 'Espace directeur' : 'Espace admin'}</h3>
+              </div>
+              <p className="text-[11px] text-[#cdc3d4]/70 font-mono mb-4">
+                Moderation des annonces, gestion des comptes et statistiques.
+              </p>
+              <button
+                onClick={() => setActivePanel(isDirector ? 'director' : 'overview')}
+                className="w-full bg-secondary text-[#400013] rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider"
+              >
+                Ouvrir la console
+              </button>
+            </div>
+          )}
+          <div className="glass-panel rounded-2xl p-5 border border-tertiary/20">
+            <div className="flex items-center gap-2 text-tertiary mb-3">
+              <Plus size={18} />
+              <h3 className="font-bold text-sm uppercase tracking-wider">Vendre un bien</h3>
+            </div>
+            <p className="text-[11px] text-[#cdc3d4]/70 font-mono mb-4">
+              Toute nouvelle annonce passe en attente jusqu'a validation admin.
+            </p>
+            <button
+              onClick={() => {
+                if (!isAuthenticated) {
+                  requestAuthentication("Vous devez etre connecte pour ajouter une annonce au catalogue.");
+                  return;
+                }
+                const nextId = Math.max(...pendingListings.map(item => item.id), 100) + 1;
+                setPendingListings(prev => [{
+                  id: nextId,
+                  brand: 'Honda',
+                  model: 'Civic Type R EK9',
+                  year: 1998,
+                  price: 36000,
+                  mileage: 92000,
+                  sellerEmail: user.email,
+                  sellerName: `${user.firstName || 'Vendeur'} ${user.lastName || 'Mercato'}`,
+                  sellerPhone: user.phone || 'A renseigner',
+                  identityStatus: 'a verifier',
+                  idCardCriteria: ['recto verso lisible', 'date valide', 'nom identique au compte'],
+                  image: 'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&w=800&q=80',
+                  category: 'Voitures JDM',
+                  saleType: 'negotiation',
+                  status: 'En attente',
+                  reason: 'Annonce creee depuis le catalogue par un vendeur connecte.',
+                }, ...prev]);
+                alert("Annonce envoyee en moderation. Elle apparait dans la console admin.");
+              }}
+              className="w-full border border-tertiary/40 text-tertiary rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider hover:bg-tertiary/10"
+            >
+              Proposer une annonce
+            </button>
+          </div>
           <div className="glass-panel rounded-2xl p-6 border border-white/5">
             <div className="flex items-center space-x-2.5 mb-6">
               <SlidersHorizontal className="text-[#bb86fc]" size={18} />
@@ -781,6 +1234,19 @@ function Home({ user, onLogout }) {
                       />
                     </button>
 
+                    {canModerate && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteProduct(product.id);
+                        }}
+                        className="absolute top-4 right-16 p-2 rounded-full bg-red-500/80 border border-red-200/30 hover:scale-110 active:scale-95 transition-all text-white cursor-pointer z-10"
+                        title="Supprimer l'annonce"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+
                     {/* Tags Flottants */}
                     <div className="absolute top-4 left-4 flex flex-wrap gap-1.5">
                       {product.verified && (
@@ -847,6 +1313,19 @@ function Home({ user, onLogout }) {
                       </div>
                     </div>
 
+                    {canModerate && (
+                      <div className="flex gap-2 mb-3">
+                        <button
+                          onClick={() => handleOpenEditProduct(product)}
+                          className="flex items-center justify-center gap-1.5 border border-primary/40 text-primary hover:bg-primary/10 rounded-lg py-2 px-3 text-[10px] font-bold uppercase tracking-wider"
+                        >
+                          <Pencil size={12} />
+                          Modifier
+                        </button>
+                        <span className="text-[10px] font-mono text-[#cdc3d4]/50 self-center">Prix verrouille</span>
+                      </div>
+                    )}
+
                     {/* Bloc d'Actions interactives */}
                     <div className="flex justify-between items-center gap-3 mt-4 pt-1">
                       {product.category !== 'Voitures JDM' ? (
@@ -868,7 +1347,7 @@ function Home({ user, onLogout }) {
                             <span>6j 23h restants</span>
                           </div>
                           <button
-                            onClick={() => setBiddingProduct(product)}
+                            onClick={() => isAuthenticated ? setBiddingProduct(product) : requestAuthentication("Vous devez etre connecte pour encherir.")}
                             className="neon-border-btn text-xs font-bold px-6 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer active:scale-95"
                           >
                             Placer une Offre
@@ -881,7 +1360,7 @@ function Home({ user, onLogout }) {
                             <span>Entiercement Vérifié</span>
                           </div>
                           <button
-                            onClick={() => alert(`Négociation ouverte pour la ${product.model}. Une fois le backend connecté par Nicolas, cette action enverra une offre en base.`)}
+                            onClick={() => isAuthenticated ? alert(`Négociation ouverte pour la ${product.model}. Une fois le backend connecté par Nicolas, cette action enverra une offre en base.`) : requestAuthentication("Vous devez etre connecte pour negocier.")}
                             className="bg-white/10 hover:bg-[#ffb2bc]/15 border border-white/10 hover:border-[#ffb2bc]/30 text-[#e5e2e1] text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95"
                           >
                             Négocier le Prix
@@ -918,6 +1397,23 @@ function Home({ user, onLogout }) {
           )}
         </section>
       </main>
+      ) : (
+        <AdminWorkspace
+          user={user}
+          activePanel={activePanel}
+          setActivePanel={setActivePanel}
+          users={adminUsers}
+          pendingListings={pendingListings}
+          products={products}
+          onApproveListing={handleApproveListing}
+          onRejectListing={handleRejectListing}
+          onBanUser={handleBanUser}
+          onDeleteUser={handleDeleteUser}
+          onDeleteProduct={handleDeleteProduct}
+          onOpenEdit={handleOpenEditProduct}
+          onStartAdd={() => setAddingProduct(true)}
+        />
+      )}
 
       {/* Modal d'Enchère Interactive */}
       {biddingProduct && (
@@ -1025,6 +1521,99 @@ function Home({ user, onLogout }) {
                 </>
               )}
 
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(editingProduct || addingProduct) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            onClick={() => {
+              setEditingProduct(null);
+              setProductDraft(null);
+              setAddingProduct(false);
+            }}
+            className="absolute inset-0 bg-black/70 backdrop-blur-md"
+          ></div>
+          <div className="glass-panel w-full max-w-2xl rounded-2xl border border-white/10 relative z-10 overflow-hidden">
+            <div className="p-5 border-b border-white/10 flex items-center justify-between bg-[#1c1b1b]/80">
+              <div className="flex items-center gap-2">
+                {editingProduct ? <Pencil className="text-primary" size={18} /> : <Plus className="text-tertiary" size={18} />}
+                <h3 className="font-extrabold uppercase tracking-wider text-sm">
+                  {editingProduct ? "Modifier l'annonce" : 'Ajouter une vente'}
+                </h3>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingProduct(null);
+                  setProductDraft(null);
+                  setAddingProduct(false);
+                }}
+                className="text-[#cdc3d4]/60 hover:text-white"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
+              {[
+                ['brand', 'Marque'],
+                ['model', 'Modele'],
+                ['year', 'Annee'],
+                ['mileage', 'Kilometrage'],
+                ['chassis', 'Chassis / grade'],
+                ['engine', 'Moteur'],
+                ['power', 'Puissance'],
+                ['category', 'Categorie'],
+                ['status', 'Statut affiche'],
+                ['saleType', 'Type de vente'],
+                ['image', 'Image URL'],
+              ].map(([field, label]) => {
+                const draft = editingProduct ? productDraft : newProductDraft;
+                const setDraft = editingProduct ? setProductDraft : setNewProductDraft;
+                return (
+                  <label key={field} className={field === 'image' ? 'md:col-span-2 space-y-2' : 'space-y-2'}>
+                    <span className="text-[#cdc3d4]/50 uppercase tracking-widest">{label}</span>
+                    <input
+                      value={draft?.[field] ?? ''}
+                      onChange={(e) => setDraft(prev => ({ ...prev, [field]: field === 'year' || field === 'mileage' ? Number(e.target.value) : e.target.value }))}
+                      className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-primary"
+                    />
+                  </label>
+                );
+              })}
+
+              <label className="space-y-2">
+                <span className="text-[#cdc3d4]/50 uppercase tracking-widest">Prix</span>
+                <input
+                  type="number"
+                  disabled={Boolean(editingProduct)}
+                  value={editingProduct ? editingProduct.price : newProductDraft.price}
+                  onChange={(e) => setNewProductDraft(prev => ({ ...prev, price: Number(e.target.value) }))}
+                  className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2.5 text-white disabled:text-[#cdc3d4]/40 disabled:cursor-not-allowed focus:outline-none focus:border-primary"
+                />
+                {editingProduct && <span className="text-[10px] text-secondary">Le prix ne peut pas etre modifie par un administrateur.</span>}
+              </label>
+            </div>
+
+            <div className="px-6 pb-6 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setEditingProduct(null);
+                  setProductDraft(null);
+                  setAddingProduct(false);
+                }}
+                className="border border-white/10 text-[#cdc3d4] rounded-lg px-4 py-2 text-xs font-bold uppercase"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={editingProduct ? handleSaveProductDraft : handleAddProduct}
+                className="bg-primary text-[#460283] rounded-lg px-5 py-2 text-xs font-bold uppercase"
+              >
+                {editingProduct ? 'Enregistrer' : 'Ajouter'}
+              </button>
             </div>
           </div>
         </div>

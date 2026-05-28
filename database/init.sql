@@ -21,7 +21,13 @@ CREATE TABLE `users` (
     `username` VARCHAR(50) NOT NULL UNIQUE,
     `email` VARCHAR(100) NOT NULL UNIQUE,
     `password_hash` VARCHAR(255) NOT NULL,
-    `role` ENUM('buyer', 'seller', 'admin') NOT NULL DEFAULT 'buyer',
+    `role` ENUM('buyer', 'seller', 'admin', 'director') NOT NULL DEFAULT 'buyer',
+    `first_name` VARCHAR(80) DEFAULT NULL,
+    `last_name` VARCHAR(80) DEFAULT NULL,
+    `phone` VARCHAR(30) DEFAULT NULL,
+    `account_status` ENUM('active', 'banned', 'deleted') NOT NULL DEFAULT 'active',
+    `id_card_status` ENUM('pending', 'validated', 'rejected') NOT NULL DEFAULT 'pending',
+    `id_card_notes` VARCHAR(255) DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -40,10 +46,14 @@ CREATE TABLE `products` (
     `description` TEXT,
     `image_url` VARCHAR(255) DEFAULT NULL,
     `status` ENUM('available', 'sold') NOT NULL DEFAULT 'available',
+    `approval_status` ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'approved',
+    `approved_by` INT DEFAULT NULL,
     `sale_type` ENUM('auction', 'negotiation', 'both') NOT NULL DEFAULT 'negotiation',
     `seller_id` INT NOT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT `fk_product_seller` FOREIGN KEY (`seller_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+    ,
+    CONSTRAINT `fk_product_approver` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------------------
@@ -94,7 +104,8 @@ INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `role`) VALUES
 (3, 'paul_auctions', 'paul@mercatonova.com', '$2y$10$wzW1qQfKxW03r2x6i.q17uyU6XN4F8P7B/hUe/c.z5Z/Y.q0F2U.y', 'seller'),
 (4, 'nicolas_nego', 'nicolas@mercatonova.com', '$2y$10$wzW1qQfKxW03r2x6i.q17uyU6XN4F8P7B/hUe/c.z5Z/Y.q0F2U.y', 'seller'),
 (5, 'takumi_86', 'takumi.fujiwara@akina.jp', '$2y$10$wzW1qQfKxW03r2x6i.q17uyU6XN4F8P7B/hUe/c.z5Z/Y.q0F2U.y', 'buyer'),
-(6, 'drift_king', 'keiichi.tsuchiya@hotversion.jp', '$2y$10$wzW1qQfKxW03r2x6i.q17uyU6XN4F8P7B/hUe/c.z5Z/Y.q0F2U.y', 'buyer');
+(6, 'drift_king', 'keiichi.tsuchiya@hotversion.jp', '$2y$10$wzW1qQfKxW03r2x6i.q17uyU6XN4F8P7B/hUe/c.z5Z/Y.q0F2U.y', 'buyer'),
+(7, 'direction_nova', 'directeur@mercatonova.com', '$2y$10$wzW1qQfKxW03r2x6i.q17uyU6XN4F8P7B/hUe/c.z5Z/Y.q0F2U.y', 'director');
 
 -- Insert JDM Products
 INSERT INTO `products` (`id`, `brand`, `model`, `year`, `price`, `mileage`, `description`, `image_url`, `status`, `sale_type`, `seller_id`) VALUES
