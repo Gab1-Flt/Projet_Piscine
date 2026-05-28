@@ -255,7 +255,7 @@ function AdminWorkspace({
                 {[
                   { label: 'Frais de transaction', val: '2.5% par vente (escrow)', act: 'Ajuster les frais' },
                   { label: 'Limite de depot', val: '¥15,000,000 sans KYC', act: 'Modifier le seuil' },
-                  { label: 'Entiercement systeme', val: 'Actif (99.9% de couverture)', act: 'Gérer la clé d'administration' },
+                  { label: 'Entiercement systeme', val: 'Actif (99.9% de couverture)', act: "Gérer la clé d'administration" },
                   { label: 'Devises acceptées', val: 'JPY (¥), EUR (€), USD ($)', act: 'Ajouter/Enlever des devises' },
                 ].map((ctrl) => (
                   <div key={ctrl.label} className="bg-[#1c1b1b]/70 border border-white/5 rounded-xl p-4 flex flex-col justify-between min-h-[120px]">
@@ -1559,8 +1559,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
                             <X size={12} />
                             <span>Supprimer l'annonce (Admin)</span>
                           </button>
-</div>
-                      )}
+                        </div>
                       )}
                     </div>
                   </div>
