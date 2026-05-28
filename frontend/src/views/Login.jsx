@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Mail, Lock, ArrowRight, Zap, Shield, User, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, ArrowRight, Zap, Shield, User, Sparkles, Eye, EyeOff, Cpu } from 'lucide-react';
 
 function Login({ onLogin }) {
   const [isRegistering, setIsRegistering] = useState(false);
-  const [role, setRole] = useState('utilisateur'); // 'utilisateur' ou 'admin'
-  const [email, setEmail] = useState('driver@mercatonova.com');
+  const [role, setRole] = useState('buyer'); // 'buyer', 'seller' ou 'admin'
+  const [email, setEmail] = useState('buyer@mercatonova.com');
   const [password, setPassword] = useState('••••••••');
   const [showPassword, setShowPassword] = useState(false);
 
@@ -19,8 +19,10 @@ function Login({ onLogin }) {
     if (!isRegistering) {
       if (selectedRole === 'admin') {
         setEmail('admin@mercatonova.com');
+      } else if (selectedRole === 'seller') {
+        setEmail('seller@mercatonova.com');
       } else {
-        setEmail('driver@mercatonova.com');
+        setEmail('buyer@mercatonova.com');
       }
     }
   };
@@ -88,30 +90,42 @@ function Login({ onLogin }) {
           </div>
 
           {/* Interactive Role Selector Segment Toggle */}
-          <div className="p-1 bg-[#1c1b1b] border border-white/5 rounded-xl flex gap-1 mb-6 font-mono text-[10px] uppercase font-bold">
+          <div className="p-1 bg-[#1c1b1b] border border-white/5 rounded-xl flex gap-1 mb-6 font-mono text-[9px] uppercase font-bold">
             <button
               type="button"
-              onClick={() => handleRoleChange('utilisateur')}
-              className={`flex-1 py-2.5 rounded-lg flex items-center justify-center space-x-1.5 cursor-pointer transition-all ${
-                role === 'utilisateur'
+              onClick={() => handleRoleChange('buyer')}
+              className={`flex-grow py-2.5 rounded-lg flex items-center justify-center space-x-1 cursor-pointer transition-all ${
+                role === 'buyer'
                   ? 'bg-primary text-[#460283] shadow-[0_0_10px_rgba(187,134,252,0.25)]'
                   : 'text-[#cdc3d4]/70 hover:text-[#e5e2e1]'
               }`}
             >
               <User size={12} />
-              <span>Pilote / Vendeur</span>
+              <span>Client</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleRoleChange('seller')}
+              className={`flex-grow py-2.5 rounded-lg flex items-center justify-center space-x-1 cursor-pointer transition-all ${
+                role === 'seller'
+                  ? 'bg-tertiary text-[#003830] shadow-[0_0_10px_rgba(23,222,202,0.25)]'
+                  : 'text-[#cdc3d4]/70 hover:text-[#e5e2e1]'
+              }`}
+            >
+              <Cpu size={12} />
+              <span>Vendeur</span>
             </button>
             <button
               type="button"
               onClick={() => handleRoleChange('admin')}
-              className={`flex-1 py-2.5 rounded-lg flex items-center justify-center space-x-1.5 cursor-pointer transition-all ${
+              className={`flex-grow py-2.5 rounded-lg flex items-center justify-center space-x-1 cursor-pointer transition-all ${
                 role === 'admin'
                   ? 'bg-secondary text-[#400013] shadow-[0_0_10px_rgba(255,178,188,0.25)]'
                   : 'text-[#cdc3d4]/70 hover:text-[#e5e2e1]'
               }`}
             >
               <Shield size={12} />
-              <span>Administrateur</span>
+              <span>Admin</span>
             </button>
           </div>
 
@@ -232,7 +246,9 @@ function Login({ onLogin }) {
               className={`w-full font-bold text-xs py-4 rounded-lg uppercase tracking-wider cursor-pointer active:scale-[0.98] transition-all flex items-center justify-center space-x-2 mt-8 shadow-[0_0_20px_rgba(0,0,0,0.5)] ${
                 role === 'admin'
                   ? 'bg-secondary text-[#400013] hover:bg-secondary/90 shadow-secondary/15'
-                  : 'bg-primary text-[#460283] hover:bg-primary/90 shadow-primary/15'
+                  : role === 'seller'
+                    ? 'bg-tertiary text-[#003830] hover:bg-tertiary/90 shadow-tertiary/15'
+                    : 'bg-primary text-[#460283] hover:bg-primary/90 shadow-primary/15'
               }`}
             >
               <span>{isRegistering ? 'Rejoindre le syndicat' : 'Entrer dans le garage'}</span>

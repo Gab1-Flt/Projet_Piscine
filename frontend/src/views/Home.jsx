@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search, Bell, MessageSquare, User, Grid, List, Shield,
   ShoppingCart, Timer, SlidersHorizontal, ArrowUpRight,
@@ -175,10 +175,6 @@ function Home({ user, onLogout }) {
     setShowCartMenu(false);
   };
 
-  const handleReadNotification = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
-
   // Ajouter / Retirer des favoris
   const toggleFavorite = (productId) => {
     if (favorites.includes(productId)) {
@@ -253,14 +249,164 @@ function Home({ user, onLogout }) {
 
   const handleAddToCart = (product) => {
     setCartItems(prev => [...prev, product]);
-    // Effet visuel immédiat dans la console ou via notification
   };
 
   const handleRemoveFromCart = (productId) => {
     setCartItems(prev => prev.filter(item => item.id !== productId));
   };
 
+  // Action administrative : supprimer un produit de la liste locale
+  const handleAdminDelete = (productId, model) => {
+    if (window.confirm(`[ADMIN] Confirmer la suppression définitive du produit : ${model} ?`)) {
+      setProducts(prev => prev.filter(p => p.id !== productId));
+      alert(`Produit ${model} supprimé du catalogue.`);
+    }
+  };
+
+  const handleReadNotification = (id) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
+
+  // Lancement de l'alerte vendeur à la connexion
+  useEffect(() => {
+    if (user?.role === 'seller') {
+      alert("La page espace vendeur doit être implémentée par Nicolas.");
+    }
+  }, [user]);
+
+  // Rendu conditionnel si vendeur
+  if (user?.role === 'seller') {
+    return (
+      <div className="min-h-screen bg-[#131313] text-[#e5e2e1] antialiased overflow-x-hidden font-sans pt-24 selection:bg-primary selection:text-[#460283]">
+        {/* Gradients lumineux néons en arrière-plan */}
+        <div className="absolute top-0 right-0 w-[40vw] h-[40vw] rounded-full bg-[#17deca]/5 blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-[20%] left-0 w-[35vw] h-[35vw] rounded-full bg-secondary/5 blur-[120px] pointer-events-none"></div>
+
+        {/* Navigation Vendeur */}
+        <nav className="bg-[#131313]/80 backdrop-blur-xl fixed top-0 w-full z-40 border-b border-white/10 shadow-[0_0_20px_rgba(23,222,202,0.1)]">
+          <div className="flex justify-between items-center h-20 px-4 md:px-16 w-full max-w-[1440px] mx-auto">
+            {/* Logo & Titre */}
+            <div className="flex items-center space-x-2.5">
+              <div className="w-9 h-9 rounded bg-[#17deca] flex items-center justify-center font-black tracking-tighter text-[#003830] italic text-lg shadow-[0_0_12px_rgba(23,222,202,0.4)]">
+                MN
+              </div>
+              <div>
+                <span className="font-extrabold text-lg tracking-wider text-[#dab9ff] italic uppercase">MERCATO <span className="text-[#ffb2bc]">NOVA</span></span>
+                <p className="text-[9px] text-[#cdc3d4]/50 font-mono tracking-widest -mt-1 uppercase">Tokyo Underground</p>
+              </div>
+            </div>
+
+            {/* Onglet vendeur */}
+            <div className="hidden lg:flex gap-8 items-center font-semibold text-sm">
+              <span className="text-[#17deca] border-b-2 border-[#17deca] pb-1 font-mono uppercase tracking-widest text-xs">Espace Vendeur</span>
+            </div>
+
+            {/* Profil */}
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <button 
+                  onClick={toggleProfile}
+                  className={`p-2 rounded-full transition-all active:scale-95 cursor-pointer ${
+                    showProfileMenu ? 'text-[#17deca] bg-white/5' : 'text-[#cdc3d4] hover:text-[#17deca] hover:bg-white/5'
+                  }`}
+                >
+                  <User size={20} />
+                </button>
+
+                {showProfileMenu && (
+                  <>
+                    <div onClick={() => setShowProfileMenu(false)} className="fixed inset-0 z-30"></div>
+                    <div className="absolute right-0 mt-3 w-52 rounded-xl border border-white/10 bg-[#1c1b1b] py-2 shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-40">
+                      <div className="px-4 py-2.5 border-b border-white/5 mb-1.5 text-[10px] font-mono">
+                        <span className="block text-[#cdc3d4]/40 font-bold uppercase tracking-wider text-[8px]">Réseau Vendeur</span>
+                        <span className="text-zinc-200 truncate block mt-0.5" title={user?.email}>{user?.email}</span>
+                        <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary border border-tertiary/20 text-[8px] font-bold uppercase tracking-wider">
+                          <Cpu size={8} /> Vendeur
+                        </span>
+                      </div>
+
+                      <button 
+                        onClick={() => { setShowProfileMenu(false); alert("La page espace vendeur doit être implémentée par Nicolas."); }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-[#cdc3d4] hover:text-tertiary hover:bg-tertiary/5 transition-all text-left cursor-pointer"
+                      >
+                        <Cpu size={14} className="text-tertiary" />
+                        <span>Mon Inventaire</span>
+                      </button>
+
+                      <button 
+                        onClick={() => { setShowProfileMenu(false); onLogout(); }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-zinc-400 hover:text-red-400 hover:bg-red-500/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1.5 pt-2"
+                      >
+                        <LogOut size={14} className="text-zinc-500" />
+                        <span>Se déconnecter</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Dashboard Placeholder */}
+        <main className="max-w-[1440px] mx-auto px-4 md:px-16 py-12 flex items-center justify-center min-h-[60vh] relative z-10">
+          <div className="glass-panel w-full max-w-2xl rounded-3xl border border-white/5 p-10 text-center space-y-6 shadow-[0_0_50px_rgba(0,0,0,0.4)]">
+            <div className="w-16 h-16 rounded-full bg-[#17deca]/10 border border-[#17deca]/30 text-[#17deca] flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(23,222,202,0.15)]">
+              <Cpu size={28} className="animate-pulse" />
+            </div>
+            
+            <div className="space-y-2">
+              <span className="text-[#17deca] font-mono text-xs uppercase tracking-widest font-bold">Syndicate Vendor Console</span>
+              <h2 className="text-2xl sm:text-3xl font-black italic tracking-tighter uppercase text-[#dab9ff]">
+                Votre Espace Vendeur
+              </h2>
+              <p className="text-sm text-[#cdc3d4]/70 max-w-md mx-auto">
+                Interface de gestion des stocks, d'ajout de bolides JDM et de suivi des enchères en cours.
+              </p>
+            </div>
+
+            {/* Avertissement de développement */}
+            <div className="bg-[#17deca]/5 border border-[#17deca]/20 rounded-xl p-5 max-w-lg mx-auto text-left font-mono text-xs space-y-2 text-[#17deca]">
+              <div className="flex items-center gap-2 font-bold uppercase tracking-wider">
+                <Shield size={14} />
+                <span>Message du Système</span>
+              </div>
+              <p className="text-[#cdc3d4]/80 leading-relaxed text-[11px]">
+                Ce module de vente crypté (ajout de voitures en base de données, validation d'offres) doit être implémenté par <strong>Nicolas</strong> lors de la prochaine étape d'intégration du backend.
+              </p>
+            </div>
+
+            <div className="pt-4 flex justify-center gap-4">
+              <button 
+                onClick={() => alert("La page espace vendeur doit être implémentée par Nicolas.")}
+                className="bg-[#17deca] hover:bg-[#17deca]/95 text-[#003830] font-bold text-xs px-6 py-3.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95 shadow-[0_0_15px_rgba(23,222,202,0.3)] font-sans"
+              >
+                Ajouter un Bolide
+              </button>
+              <button 
+                onClick={onLogout}
+                className="bg-white/5 hover:bg-white/10 text-zinc-300 font-bold text-xs px-6 py-3.5 rounded-lg uppercase tracking-wider cursor-pointer border border-white/10 transition-all active:scale-95 font-sans"
+              >
+                Déconnexion
+              </button>
+            </div>
+          </div>
+        </main>
+
+        <footer className="bg-[#0e0e0e] border-t border-white/5 py-12 text-[#cdc3d4]/40 text-xs font-mono">
+          <div className="max-w-[1440px] mx-auto px-4 md:px-16 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <p>© 2026 Mercato Nova. Tous droits réservés.</p>
+            <div className="flex items-center space-x-2 text-[10px] uppercase text-tertiary">
+              <Shield size={12} />
+              <span>Bouclier de Vente Vérifié</span>
+            </div>
+          </div>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#131313] text-[#e5e2e1] antialiased overflow-x-hidden font-sans pt-24 selection:bg-primary selection:text-[#460283]">
@@ -286,8 +432,7 @@ function Home({ user, onLogout }) {
 
           {/* Onglets Principaux */}
           <div className="hidden lg:flex gap-8 items-center font-semibold text-sm">
-            <a className="text-[#bb86fc] border-b-2 border-[#bb86fc] pb-1 cursor-pointer transition-colors" href="#">Voitures</a>
-            <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Pièces</a>
+            <a className="text-[#bb86fc] border-b-2 border-[#bb86fc] pb-1 cursor-pointer transition-colors" href="#">Catalogue</a>
             <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Enchères</a>
             <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Préparations</a>
           </div>
@@ -502,7 +647,7 @@ function Home({ user, onLogout }) {
                 )}
               </div>
 
-              {/* Menu Profil avec Dropdown - OPAQUE (bg-[#1c1b1b] sans transparence overlapping) */}
+              {/* Menu Profil avec Dropdown - OPAQUE */}
               <div className="relative">
                 <button 
                   onClick={toggleProfile}
@@ -517,7 +662,6 @@ function Home({ user, onLogout }) {
                 {/* Dropdown Menu de Profil OPAQUE */}
                 {showProfileMenu && (
                   <>
-                    {/* Backdrop invisible pour fermer le menu lors d'un clic en dehors */}
                     <div 
                       onClick={() => setShowProfileMenu(false)}
                       className="fixed inset-0 z-30"
@@ -533,9 +677,13 @@ function Home({ user, onLogout }) {
                           <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded bg-secondary/10 text-secondary border border-secondary/20 text-[8px] font-bold uppercase tracking-wider shadow-[0_0_8px_rgba(255,178,188,0.15)]">
                             <Shield size={8} /> Admin VIP
                           </span>
+                        ) : user?.role === 'seller' ? (
+                          <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary border border-tertiary/20 text-[8px] font-bold uppercase tracking-wider">
+                            <Cpu size={8} /> Vendeur
+                          </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[8px] font-bold uppercase tracking-wider">
-                            <User size={8} /> Pilote / Vendeur
+                            <User size={8} /> Client
                           </span>
                         )}
                       </div>
@@ -556,13 +704,16 @@ function Home({ user, onLogout }) {
                         <span>Mes achats</span>
                       </button>
                       
-                      <button 
-                        onClick={() => { setShowProfileMenu(false); alert("Ouverture de l'espace Vendeur (Gestion des véhicules et pièces)"); }}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-[#cdc3d4] hover:text-[#17deca] hover:bg-[#17deca]/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1 pt-1.5"
-                      >
-                        <Cpu size={14} className="text-[#17deca]" />
-                        <span>Espace vendeur</span>
-                      </button>
+                      {/* Cacher l'espace vendeur pour les clients de type buyer */}
+                      {user?.role !== 'buyer' && (
+                        <button 
+                          onClick={() => { setShowProfileMenu(false); alert("La page espace vendeur doit être implémentée par Nicolas."); }}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-[#cdc3d4] hover:text-[#17deca] hover:bg-[#17deca]/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1 pt-1.5"
+                        >
+                          <Cpu size={14} className="text-[#17deca]" />
+                          <span>Espace vendeur</span>
+                        </button>
+                      )}
 
                       {/* Lien Administrateur Conditionnel */}
                       {user?.role === 'admin' && (
@@ -680,6 +831,17 @@ function Home({ user, onLogout }) {
 
         {/* Grille du Catalogue Produits */}
         <section className="col-span-4 lg:col-span-9 space-y-6">
+
+          {/* Bannière Modérateur Admin */}
+          {user?.role === 'admin' && (
+            <div className="bg-[#ffb2bc]/5 border border-[#ffb2bc]/20 rounded-xl p-4 flex items-center justify-between font-mono text-xs text-[#ffb2bc] shadow-[0_0_15px_rgba(255,178,188,0.05)] animate-in fade-in duration-300 relative z-10">
+              <div className="flex items-center gap-2.5">
+                <Shield size={16} />
+                <span><strong>Mode Modérateur Actif</strong> — Droits de modération globale et suppression d'annonces activés.</span>
+              </div>
+              <span className="text-[9px] bg-[#ffb2bc]/10 px-2 py-0.5 rounded uppercase tracking-wider font-bold">Admin Console</span>
+            </div>
+          )}
 
           {/* En-tête de section */}
           <div className="flex justify-between items-end border-b border-white/5 pb-4">
@@ -848,45 +1010,61 @@ function Home({ user, onLogout }) {
                     </div>
 
                     {/* Bloc d'Actions interactives */}
-                    <div className="flex justify-between items-center gap-3 mt-4 pt-1">
-                      {product.category !== 'Voitures JDM' ? (
-                        <>
-                          <div className="font-extrabold text-base md:text-lg text-zinc-100 font-mono">
-                            ${product.price.toLocaleString()}
-                          </div>
+                    <div className="flex flex-col justify-between h-full">
+                      <div className="flex justify-between items-center gap-3 mt-4 pt-1">
+                        {product.category !== 'Voitures JDM' ? (
+                          <>
+                            <div className="font-extrabold text-base md:text-lg text-zinc-100 font-mono">
+                              ${product.price.toLocaleString()}
+                            </div>
+                            <button
+                              onClick={() => handleAddToCart(product)}
+                              className="bg-white/10 hover:bg-white/20 text-[#e5e2e1] text-xs font-semibold px-4.5 py-2.5 rounded-lg transition-all cursor-pointer active:scale-95"
+                            >
+                              Ajouter au Panier
+                            </button>
+                          </>
+                        ) : product.status === 'Enchère en Cours' ? (
+                          <>
+                            <div className="flex items-center space-x-1.5 text-xs text-[#ffb2bc] font-semibold animate-pulse">
+                              <Timer size={14} />
+                              <span>6j 23h restants</span>
+                            </div>
+                            <button
+                              onClick={() => setBiddingProduct(product)}
+                              className="neon-border-btn text-xs font-bold px-6 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer active:scale-95"
+                            >
+                              Placer une Offre
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center space-x-1.5 text-xs text-[#17deca] font-semibold">
+                              <Landmark size={14} />
+                              <span>Entiercement Vérifié</span>
+                            </div>
+                            <button
+                              onClick={() => alert(`Négociation ouverte pour la ${product.model}. Une fois le backend connecté par Nicolas, cette action enverra une offre en base.`)}
+                              className="bg-white/10 hover:bg-[#ffb2bc]/15 border border-white/10 hover:border-[#ffb2bc]/30 text-[#e5e2e1] text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95"
+                            >
+                              Négocier le Prix
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Bouton de suppression Admin conditionnel */}
+                      {user?.role === 'admin' && (
+                        <div className="mt-4 pt-3 border-t border-white/5 flex justify-end">
                           <button
-                            onClick={() => handleAddToCart(product)}
-                            className="bg-white/10 hover:bg-white/20 text-[#e5e2e1] text-xs font-semibold px-4.5 py-2.5 rounded-lg transition-all cursor-pointer active:scale-95"
+                            type="button"
+                            onClick={() => handleAdminDelete(product.id, product.model)}
+                            className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-secondary hover:text-red-400 hover:bg-secondary/5 px-2.5 py-1.5 rounded transition-all cursor-pointer"
                           >
-                            Ajouter au Panier
+                            <X size={12} />
+                            <span>Supprimer l'annonce (Admin)</span>
                           </button>
-                        </>
-                      ) : product.status === 'Enchère en Cours' ? (
-                        <>
-                          <div className="flex items-center space-x-1.5 text-xs text-[#ffb2bc] font-semibold animate-pulse">
-                            <Timer size={14} />
-                            <span>6j 23h restants</span>
-                          </div>
-                          <button
-                            onClick={() => setBiddingProduct(product)}
-                            className="neon-border-btn text-xs font-bold px-6 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer active:scale-95"
-                          >
-                            Placer une Offre
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex items-center space-x-1.5 text-xs text-[#17deca] font-semibold">
-                            <Landmark size={14} />
-                            <span>Entiercement Vérifié</span>
-                          </div>
-                          <button
-                            onClick={() => alert(`Négociation ouverte pour la ${product.model}. Une fois le backend connecté par Nicolas, cette action enverra une offre en base.`)}
-                            className="bg-white/10 hover:bg-[#ffb2bc]/15 border border-white/10 hover:border-[#ffb2bc]/30 text-[#e5e2e1] text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95"
-                          >
-                            Négocier le Prix
-                          </button>
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>
