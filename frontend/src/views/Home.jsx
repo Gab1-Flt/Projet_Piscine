@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search, Bell, MessageSquare, User, Grid, List, Shield,
   ShoppingCart, Timer, SlidersHorizontal, ArrowUpRight,
@@ -98,36 +98,41 @@ function AdminWorkspace({
             })}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className="glass-panel rounded-lg p-6 border border-white/10">
-              <h2 className="text-xl font-extrabold mb-4 flex items-center gap-2">
-                <Plus className="text-tertiary" size={18} />
-                Gestion des ventes
-              </h2>
-              <p className="text-xs text-[#cdc3d4]/70 font-mono mb-4">
-                Un administrateur peut ajouter, supprimer ou modifier une annonce. Le prix reste verrouille en modification.
-              </p>
-              <button
-                onClick={onStartAdd}
-                className="bg-tertiary text-[#003b35] hover:bg-tertiary/90 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center gap-2"
-              >
-                <Plus size={14} />
-                Ajouter une vente
-              </button>
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-2 glass-panel rounded-2xl p-6 border border-white/10 space-y-6">
+              <h3 className="text-sm font-bold font-mono uppercase tracking-widest text-[#cdc3d4] flex items-center gap-2">
+                <BarChart3 size={16} />
+                Performances du Marche
+              </h3>
+              <div className="h-[260px] flex items-end justify-between gap-2 pt-6 border-b border-white/5">
+                {[45, 58, 62, 79, 90, 85, 95, 110, 105, 115, 130, 142].map((height, idx) => (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-2 group">
+                    <span className="text-[8px] font-mono text-primary opacity-0 group-hover:opacity-100 transition-opacity">${height}k</span>
+                    <div style={{ height: `${height * 1.5}px` }} className="w-full bg-gradient-to-t from-primary/40 to-primary rounded-t-sm group-hover:from-secondary/40 group-hover:to-secondary transition-all"></div>
+                    <span className="text-[8px] font-mono text-[#cdc3d4]/40 mt-1">{['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][idx]}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="glass-panel rounded-lg p-6 border border-white/10">
-              <h2 className="text-xl font-extrabold mb-4 flex items-center gap-2">
-                <FileCheck className="text-secondary" size={18} />
-                File de moderation
-              </h2>
-              <div className="flex items-center justify-between text-sm font-mono">
-                <span className="text-[#cdc3d4]/70">Annonces en attente</span>
-                <span className="text-secondary font-bold">{pendingListings.length}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm font-mono mt-3">
-                <span className="text-[#cdc3d4]/70">Comptes bannis</span>
-                <span className="text-red-300 font-bold">{users.filter((account) => account.status === 'banned').length}</span>
+            <div className="glass-panel rounded-2xl p-6 border border-white/10 space-y-4">
+              <h3 className="text-sm font-bold font-mono uppercase tracking-widest text-[#cdc3d4] flex items-center gap-2">
+                <Shield size={16} />
+                Journal d'audit
+              </h3>
+              <div className="space-y-3 font-mono text-[9px] text-[#cdc3d4]/70">
+                {[
+                  { time: '15:24', act: 'Admin supprime annonce 104', type: 'warn' },
+                  { time: '14:52', act: 'Nouveau compte: nicolas@mercatonova.com', type: 'info' },
+                  { time: '13:01', act: 'Approbation annonce 102 par Camille', type: 'success' },
+                  { time: '11:15', act: 'Tentative connexion suspecte bannie', type: 'error' },
+                ].map((log, idx) => (
+                  <div key={idx} className="flex items-center gap-2 border-b border-white/5 pb-2">
+                    <span className="text-[#cdc3d4]/30">{log.time}</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[8px] uppercase ${log.type === 'warn' ? 'bg-secondary/10 text-secondary' : log.type === 'error' ? 'bg-red-500/10 text-red-400' : 'bg-primary/10 text-primary'}`}>{log.type}</span>
+                    <span className="truncate">{log.act}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -135,125 +140,158 @@ function AdminWorkspace({
       )}
 
       {activePanel === 'pending' && (
-        <section className="space-y-5">
-          <h2 className="text-2xl font-extrabold flex items-center gap-3">
-            <FileCheck className="text-secondary" />
-            Nouvelles annonces a valider
+        <section className="space-y-6">
+          <h2 className="text-xl font-extrabold italic uppercase tracking-wider text-[#cdc3d4] flex items-center gap-2">
+            <FileCheck className="text-primary" />
+            Annonces en attente de validation
           </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            {pendingListings.map((listing) => (
-              <article key={listing.id} className="glass-panel rounded-lg overflow-hidden border border-white/10">
-                <img src={listing.image} alt={listing.model} className="h-44 w-full object-cover opacity-90" />
-                <div className="p-5 space-y-4">
+          {pendingListings.length === 0 ? (
+            <div className="py-16 text-center glass-panel rounded-2xl border border-white/10">
+              <p className="text-[#cdc3d4]/50 font-mono text-xs">Aucune annonce en attente de validation.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {pendingListings.map((listing) => (
+                <article key={listing.id} className="glass-panel rounded-2xl border border-white/10 overflow-hidden flex flex-col justify-between">
                   <div>
-                    <div className="text-[10px] font-mono text-secondary uppercase tracking-widest">{listing.brand}</div>
-                    <h3 className="text-lg font-extrabold">{listing.year} {listing.model}</h3>
-                    <p className="text-primary font-mono font-bold">{formatMoney(listing.price)}</p>
+                    <img src={listing.image} alt={listing.model} className="w-full h-48 object-cover border-b border-white/5" />
+                    <div className="p-6 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="text-[10px] font-mono text-secondary uppercase">{listing.brand}</div>
+                          <h3 className="font-extrabold text-lg text-white">{listing.year} {listing.model}</h3>
+                        </div>
+                        <span className="px-2.5 py-1 rounded bg-[#ffb2bc]/10 text-secondary text-[9px] font-mono uppercase tracking-wider font-bold">{listing.status}</span>
+                      </div>
+                      <div className="space-y-2 border-t border-b border-white/5 py-3 font-mono text-[10px] text-[#cdc3d4]/70">
+                        <p>Vendeur : <span className="text-white">{listing.sellerName}</span> ({listing.sellerEmail})</p>
+                        <p>Tel : <span className="text-white">{listing.sellerPhone}</span></p>
+                        <p>Prix demande : <span className="text-primary font-bold">{formatMoney(listing.price)}</span></p>
+                        <p>Type de vente : <span className="text-tertiary uppercase">{listing.saleType}</span></p>
+                      </div>
+                      <div className="bg-[#1c1b1b]/70 border border-white/5 rounded-lg p-3 text-[9px] font-mono space-y-1.5">
+                        <span className="text-secondary uppercase font-bold">Signalement moderation :</span>
+                        <p className="text-[#cdc3d4] leading-relaxed">{listing.reason}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="rounded-lg bg-[#1c1b1b] border border-white/10 p-3 text-[11px] font-mono text-[#cdc3d4]/80 space-y-1.5">
-                    <div>Vendeur : {listing.sellerName}</div>
-                    <div>Email : {listing.sellerEmail}</div>
-                    <div>Tel : {listing.sellerPhone}</div>
-                    <div>KYC : <span className={listing.identityStatus === 'validee' ? 'text-tertiary' : listing.identityStatus === 'refusee' ? 'text-red-300' : 'text-secondary'}>{listing.identityStatus}</span></div>
-                    <div>Criteres CI : {listing.idCardCriteria.join(', ')}</div>
+                  <div className="p-6 pt-0 flex gap-2">
+                    <button onClick={() => onApproveListing(listing.id)} className="flex-1 flex items-center justify-center gap-1.5 bg-primary text-[#460283] rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]">
+                      <Check size={14} /> Valider
+                    </button>
+                    <button onClick={() => onRejectListing(listing.id)} className="flex-1 flex items-center justify-center gap-1.5 border border-red-500/30 hover:bg-red-500/5 text-red-300 rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider cursor-pointer transition-all active:scale-[0.98]">
+                      <X size={14} /> Refuser
+                    </button>
                   </div>
-                  <p className="text-xs text-[#cdc3d4]/70">{listing.reason}</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button onClick={() => onApproveListing(listing)} className="bg-tertiary text-[#003b35] rounded-lg py-2 text-[10px] font-bold uppercase">Accepter</button>
-                    <button onClick={() => onRejectListing(listing.id)} className="border border-secondary/40 text-secondary rounded-lg py-2 text-[10px] font-bold uppercase hover:bg-secondary/10">Refuser</button>
-                  </div>
-                </div>
-              </article>
-            ))}
-            {pendingListings.length === 0 && (
-              <div className="col-span-full glass-panel rounded-lg border border-white/10 p-10 text-center text-[#cdc3d4]/70 font-mono">
-                Aucune annonce en attente. La file de moderation est vide.
-              </div>
-            )}
-          </div>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
       {activePanel === 'accounts' && (
-        <section className="space-y-5">
-          <h2 className="text-2xl font-extrabold flex items-center gap-3">
+        <section className="space-y-6">
+          <h2 className="text-xl font-extrabold italic uppercase tracking-wider text-[#cdc3d4] flex items-center gap-2">
             <Users className="text-primary" />
-            Gestion des comptes
+            Gestion des comptes utilisateurs
           </h2>
-          <div className="glass-panel rounded-lg border border-white/10 overflow-hidden">
-            <div className="grid grid-cols-12 gap-4 px-5 py-4 bg-[#1c1b1b] text-[10px] font-mono uppercase tracking-widest text-[#cdc3d4]/60">
-              <span className="col-span-3">Utilisateur</span>
-              <span className="col-span-3">Contact</span>
-              <span className="col-span-2">Role</span>
-              <span className="col-span-2">KYC / Statut</span>
-              <span className="col-span-2 text-right">Actions</span>
+          <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse font-mono text-[10px]">
+                <thead>
+                  <tr className="border-b border-white/10 bg-[#1c1b1b]/50 text-[#cdc3d4]/50 uppercase tracking-widest">
+                    <th className="p-4">Utilisateur</th>
+                    <th className="p-4">Role</th>
+                    <th className="p-4">Statut compte</th>
+                    <th className="p-4">Statut KYC</th>
+                    <th className="p-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {visibleUsers.map((account) => (
+                    <tr key={account.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="p-4">
+                        <div className="font-bold text-white text-[11px]">{account.firstName} {account.lastName}</div>
+                        <div className="text-[#cdc3d4]/50">{account.email}</div>
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2 py-0.5 rounded text-[8px] uppercase tracking-wider font-bold ${account.role === 'directeur' ? 'bg-secondary/10 text-secondary' : account.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-zinc-800 text-zinc-300'}`}>{roleLabels[account.role]}</span>
+                      </td>
+                      <td className="p-4">
+                        <span className={`px-2 py-0.5 rounded text-[8px] uppercase tracking-wider font-bold ${account.status === 'active' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>{account.status}</span>
+                      </td>
+                      <td className="p-4">
+                        <div className="text-[9px]">{account.idCardStatus}</div>
+                        <div className="text-[8px] text-[#cdc3d4]/40 truncate max-w-[150px]">{account.idCardCriteria}</div>
+                      </td>
+                      <td className="p-4 text-right space-x-1.5">
+                        {account.status !== 'banned' && account.role !== 'directeur' && (
+                          <button onClick={() => onBanUser(account.email)} className="border border-red-500/20 text-red-400/80 hover:bg-red-500/10 px-2.5 py-1.5 rounded text-[9px] uppercase tracking-wider font-bold transition-all">Bannir</button>
+                        )}
+                        {account.role !== 'directeur' && (
+                          <button onClick={() => onDeleteUser(account.email)} className="border border-white/10 text-[#cdc3d4]/50 hover:bg-white/5 px-2.5 py-1.5 rounded text-[9px] uppercase tracking-wider font-bold transition-all">Effacer</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            {visibleUsers.map((account) => (
-              <div key={account.email} className="grid grid-cols-12 gap-4 px-5 py-4 border-t border-white/5 items-center text-sm">
-                <div className="col-span-3">
-                  <div className="font-bold">{account.firstName} {account.lastName}</div>
-                  <div className="text-[11px] text-[#cdc3d4]/50 font-mono">@{account.username}</div>
-                </div>
-                <div className="col-span-3 text-[12px] font-mono text-[#cdc3d4]/80">
-                  <div>{account.email}</div>
-                  <div>{account.phone}</div>
-                  <div>{account.city}</div>
-                </div>
-                <div className="col-span-2">
-                  <span className="px-2 py-1 rounded border border-white/10 text-[10px] font-mono uppercase">{roleLabels[account.role]}</span>
-                </div>
-                <div className="col-span-2 text-[11px] font-mono">
-                  <div className={account.status === 'banned' ? 'text-red-300' : 'text-tertiary'}>{account.status}</div>
-                  <div className="text-[#cdc3d4]/60">{account.idCardStatus}</div>
-                  {isDirector && <div className="text-secondary">{account.bankCard}</div>}
-                </div>
-                <div className="col-span-2 flex justify-end gap-2">
-                  <button
-                    onClick={() => onBanUser(account.email)}
-                    disabled={account.role === 'directeur' || account.email === user?.email}
-                    className="p-2 rounded border border-secondary/30 text-secondary hover:bg-secondary/10 disabled:opacity-30"
-                    title="Bannir"
-                  >
-                    <Ban size={14} />
-                  </button>
-                  <button
-                    onClick={() => onDeleteUser(account.email)}
-                    disabled={account.role === 'directeur' || account.email === user?.email}
-                    className="p-2 rounded border border-red-400/30 text-red-300 hover:bg-red-500/10 disabled:opacity-30"
-                    title="Supprimer"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
           </div>
         </section>
       )}
 
-      {activePanel === 'director' && (
-        <section className="space-y-5">
-          <h2 className="text-2xl font-extrabold flex items-center gap-3">
-            <Crown className="text-tertiary" />
-            Controle total des annonces
+      {activePanel === 'director' && isDirector && (
+        <section className="space-y-6">
+          <h2 className="text-xl font-extrabold italic uppercase tracking-wider text-[#cdc3d4] flex items-center gap-2">
+            <Crown className="text-secondary" />
+            Espace Directeur General
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            {visibleProducts.map((product) => (
-              <article key={product.id} className="glass-panel rounded-lg border border-white/10 overflow-hidden">
-                <img src={product.image} alt={product.model} className="h-40 w-full object-cover opacity-85" />
-                <div className="p-4 space-y-3">
-                  <div>
-                    <div className="text-[10px] font-mono text-secondary uppercase">{product.brand}</div>
-                    <h3 className="font-extrabold">{product.year} {product.model}</h3>
-                    <p className="text-primary font-mono text-sm">{formatMoney(product.price)}</p>
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div className="xl:col-span-2 glass-panel rounded-2xl p-6 border border-white/10 space-y-6">
+              <h3 className="text-sm font-bold font-mono uppercase tracking-widest text-[#cdc3d4]">Controle global de la plateforme</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { label: 'Frais de transaction', val: '2.5% par vente (escrow)', act: 'Ajuster les frais' },
+                  { label: 'Limite de depot', val: '¥15,000,000 sans KYC', act: 'Modifier le seuil' },
+                  { label: 'Entiercement systeme', val: 'Actif (99.9% de couverture)', act: 'Gérer la clé d'administration' },
+                  { label: 'Devises acceptées', val: 'JPY (¥), EUR (€), USD ($)', act: 'Ajouter/Enlever des devises' },
+                ].map((ctrl) => (
+                  <div key={ctrl.label} className="bg-[#1c1b1b]/70 border border-white/5 rounded-xl p-4 flex flex-col justify-between min-h-[120px]">
+                    <div>
+                      <div className="text-[10px] font-mono text-[#cdc3d4]/50 uppercase">{ctrl.label}</div>
+                      <div className="font-bold text-xs mt-2 text-white">{ctrl.val}</div>
+                    </div>
+                    <button onClick={() => alert("Action administrative - Bientôt disponible")} className="text-secondary text-[9px] font-mono font-bold hover:underline text-left mt-4 uppercase tracking-wider">{ctrl.act} →</button>
                   </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => onOpenEdit(product)} className="flex-1 border border-primary/40 text-primary rounded-lg py-2 text-[10px] font-bold uppercase">Modifier</button>
-                    <button onClick={() => onDeleteProduct(product.id)} className="flex-1 border border-red-400/40 text-red-300 rounded-lg py-2 text-[10px] font-bold uppercase">Supprimer</button>
-                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="glass-panel rounded-2xl p-6 border border-white/10 space-y-6">
+              <h3 className="text-sm font-bold font-mono uppercase tracking-widest text-[#cdc3d4]">Base JDM (Administration)</h3>
+              <div className="bg-[#1c1b1b]/50 border border-white/5 rounded-xl p-4 space-y-4">
+                <div className="flex justify-between items-center text-[10px] font-mono">
+                  <span>Vehicules en ligne</span>
+                  <span className="text-white font-bold">{visibleProducts.length}</span>
                 </div>
-              </article>
-            ))}
+                <button onClick={onStartAdd} className="w-full bg-secondary text-[#400013] rounded-lg py-3 text-[10px] font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all active:scale-[0.98]">
+                  <Plus size={14} /> Ajouter un vehicule
+                </button>
+              </div>
+              <div className="space-y-3 max-h-[170px] overflow-y-auto pr-1">
+                {visibleProducts.map((product) => (
+                  <div key={product.id} className="flex justify-between items-center bg-[#1c1b1b]/40 border border-white/5 rounded-lg p-2.5 text-[9px] font-mono">
+                    <span className="truncate text-white">{product.year} {product.model}</span>
+                    <div className="flex gap-1.5 ml-2">
+                      <button onClick={() => onOpenEdit(product)} className="text-primary hover:underline">Editer</button>
+                      <button onClick={() => onDeleteProduct(product.id)} className="text-red-400 hover:underline">Suppr</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       )}
@@ -261,7 +299,7 @@ function AdminWorkspace({
   );
 }
 
-function Home({ user, onLogout, onLoginRequest }) {
+function Home({ user, onLogout, onSelectAuction, onNavigate }) {
   // Jeu de données des produits traduit en français, en lien avec init.sql
   const initialProducts = [
     {
@@ -429,14 +467,7 @@ function Home({ user, onLogout, onLoginRequest }) {
     { id: 3, sender: "Célestin (Admin)", snippet: "Réseau crypté opérationnel.", time: "Hier", online: true }
   ]);
 
-  // États de l'enchère interactive
-  const [biddingProduct, setBiddingProduct] = useState(null);
-  const [bidAmount, setBidAmount] = useState('');
-  const [bidSuccess, setBidSuccess] = useState(false);
-  const [bidHistory, setBidHistory] = useState([
-    { bidder: 'keiichi_tsuchiya', amount: 180000, date: 'Il y a 10 min' },
-    { bidder: 'takumi_86', amount: 175000, date: 'Il y a 2 heures' }
-  ]);
+
 
   const requestAuthentication = (message = "Connexion requise pour continuer.") => {
     alert(message);
@@ -550,10 +581,6 @@ function Home({ user, onLogout, onLoginRequest }) {
     setShowCartMenu(false);
   };
 
-  const handleReadNotification = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  };
-
   // Ajouter / Retirer des favoris
   const toggleFavorite = (productId) => {
     if (favorites.includes(productId)) {
@@ -597,38 +624,8 @@ function Home({ user, onLogout, onLoginRequest }) {
     return matchesSearch && matchesCategory && matchesBrand && matchesFavorites && matchesSalesType;
   });
 
-  // Soumission d'une enchère
-  const handleBidSubmit = (e) => {
-    e.preventDefault();
-    if (!isAuthenticated) {
-      requestAuthentication("Vous devez etre connecte pour encherir.");
-      return;
-    }
-    const numericBid = parseFloat(bidAmount);
-    if (isNaN(numericBid) || numericBid <= biddingProduct.price) {
-      alert(`Votre offre doit être strictement supérieure à l'offre actuelle ($${biddingProduct.price.toLocaleString()})`);
-      return;
-    }
 
-    setProducts(products.map(p => {
-      if (p.id === biddingProduct.id) {
-        return { ...p, price: numericBid };
-      }
-      return p;
-    }));
 
-    setBidHistory([
-      { bidder: 'Vous (gabin_lead)', amount: numericBid, date: 'À l\'instant' },
-      ...bidHistory
-    ]);
-
-    setBidSuccess(true);
-    setTimeout(() => {
-      setBiddingProduct(null);
-      setBidSuccess(false);
-      setBidAmount('');
-    }, 1800);
-  };
 
   const handleAddToCart = (product) => {
     if (!isAuthenticated) {
@@ -636,14 +633,164 @@ function Home({ user, onLogout, onLoginRequest }) {
       return;
     }
     setCartItems(prev => [...prev, product]);
-    // Effet visuel immédiat dans la console ou via notification
   };
 
   const handleRemoveFromCart = (productId) => {
     setCartItems(prev => prev.filter(item => item.id !== productId));
   };
 
+  // Action administrative : supprimer un produit de la liste locale
+  const handleAdminDelete = (productId, model) => {
+    if (window.confirm(`[ADMIN] Confirmer la suppression définitive du produit : ${model} ?`)) {
+      setProducts(prev => prev.filter(p => p.id !== productId));
+      alert(`Produit ${model} supprimé du catalogue.`);
+    }
+  };
+
+  const handleReadNotification = (id) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
+
+  // Lancement de l'alerte vendeur à la connexion
+  useEffect(() => {
+    if (user?.role === 'seller') {
+      alert("La page espace vendeur doit être implémentée par Nicolas.");
+    }
+  }, [user]);
+
+  // Rendu conditionnel si vendeur
+  if (user?.role === 'seller') {
+    return (
+      <div className="min-h-screen bg-[#131313] text-[#e5e2e1] antialiased overflow-x-hidden font-sans pt-24 selection:bg-primary selection:text-[#460283]">
+        {/* Gradients lumineux néons en arrière-plan */}
+        <div className="absolute top-0 right-0 w-[40vw] h-[40vw] rounded-full bg-[#17deca]/5 blur-[120px] pointer-events-none"></div>
+        <div className="absolute bottom-[20%] left-0 w-[35vw] h-[35vw] rounded-full bg-secondary/5 blur-[120px] pointer-events-none"></div>
+
+        {/* Navigation Vendeur */}
+        <nav className="bg-[#131313]/80 backdrop-blur-xl fixed top-0 w-full z-40 border-b border-white/10 shadow-[0_0_20px_rgba(23,222,202,0.1)]">
+          <div className="flex justify-between items-center h-20 px-4 md:px-16 w-full max-w-[1440px] mx-auto">
+            {/* Logo & Titre */}
+            <div className="flex items-center space-x-2.5">
+              <div className="w-9 h-9 rounded bg-[#17deca] flex items-center justify-center font-black tracking-tighter text-[#003830] italic text-lg shadow-[0_0_12px_rgba(23,222,202,0.4)]">
+                MN
+              </div>
+              <div>
+                <span className="font-extrabold text-lg tracking-wider text-[#dab9ff] italic uppercase">MERCATO <span className="text-[#ffb2bc]">NOVA</span></span>
+                <p className="text-[9px] text-[#cdc3d4]/50 font-mono tracking-widest -mt-1 uppercase">Tokyo Underground</p>
+              </div>
+            </div>
+
+            {/* Onglet vendeur */}
+            <div className="hidden lg:flex gap-8 items-center font-semibold text-sm">
+              <span className="text-[#17deca] border-b-2 border-[#17deca] pb-1 font-mono uppercase tracking-widest text-xs">Espace Vendeur</span>
+            </div>
+
+            {/* Profil */}
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <button 
+                  onClick={toggleProfile}
+                  className={`p-2 rounded-full transition-all active:scale-95 cursor-pointer ${
+                    showProfileMenu ? 'text-[#17deca] bg-white/5' : 'text-[#cdc3d4] hover:text-[#17deca] hover:bg-white/5'
+                  }`}
+                >
+                  <User size={20} />
+                </button>
+
+                {showProfileMenu && (
+                  <>
+                    <div onClick={() => setShowProfileMenu(false)} className="fixed inset-0 z-30"></div>
+                    <div className="absolute right-0 mt-3 w-52 rounded-xl border border-white/10 bg-[#1c1b1b] py-2 shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-40">
+                      <div className="px-4 py-2.5 border-b border-white/5 mb-1.5 text-[10px] font-mono">
+                        <span className="block text-[#cdc3d4]/40 font-bold uppercase tracking-wider text-[8px]">Réseau Vendeur</span>
+                        <span className="text-zinc-200 truncate block mt-0.5" title={user?.email}>{user?.email}</span>
+                        <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary border border-tertiary/20 text-[8px] font-bold uppercase tracking-wider">
+                          <Cpu size={8} /> Vendeur
+                        </span>
+                      </div>
+
+                      <button 
+                        onClick={() => { setShowProfileMenu(false); alert("La page espace vendeur doit être implémentée par Nicolas."); }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-[#cdc3d4] hover:text-tertiary hover:bg-tertiary/5 transition-all text-left cursor-pointer"
+                      >
+                        <Cpu size={14} className="text-tertiary" />
+                        <span>Mon Inventaire</span>
+                      </button>
+
+                      <button 
+                        onClick={() => { setShowProfileMenu(false); onLogout(); }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-zinc-400 hover:text-red-400 hover:bg-red-500/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1.5 pt-2"
+                      >
+                        <LogOut size={14} className="text-zinc-500" />
+                        <span>Se déconnecter</span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Dashboard Placeholder */}
+        <main className="max-w-[1440px] mx-auto px-4 md:px-16 py-12 flex items-center justify-center min-h-[60vh] relative z-10">
+          <div className="glass-panel w-full max-w-2xl rounded-3xl border border-white/5 p-10 text-center space-y-6 shadow-[0_0_50px_rgba(0,0,0,0.4)]">
+            <div className="w-16 h-16 rounded-full bg-[#17deca]/10 border border-[#17deca]/30 text-[#17deca] flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(23,222,202,0.15)]">
+              <Cpu size={28} className="animate-pulse" />
+            </div>
+            
+            <div className="space-y-2">
+              <span className="text-[#17deca] font-mono text-xs uppercase tracking-widest font-bold">Syndicate Vendor Console</span>
+              <h2 className="text-2xl sm:text-3xl font-black italic tracking-tighter uppercase text-[#dab9ff]">
+                Votre Espace Vendeur
+              </h2>
+              <p className="text-sm text-[#cdc3d4]/70 max-w-md mx-auto">
+                Interface de gestion des stocks, d'ajout de bolides JDM et de suivi des enchères en cours.
+              </p>
+            </div>
+
+            {/* Avertissement de développement */}
+            <div className="bg-[#17deca]/5 border border-[#17deca]/20 rounded-xl p-5 max-w-lg mx-auto text-left font-mono text-xs space-y-2 text-[#17deca]">
+              <div className="flex items-center gap-2 font-bold uppercase tracking-wider">
+                <Shield size={14} />
+                <span>Message du Système</span>
+              </div>
+              <p className="text-[#cdc3d4]/80 leading-relaxed text-[11px]">
+                Ce module de vente crypté (ajout de voitures en base de données, validation d'offres) doit être implémenté par <strong>Nicolas</strong> lors de la prochaine étape d'intégration du backend.
+              </p>
+            </div>
+
+            <div className="pt-4 flex justify-center gap-4">
+              <button 
+                onClick={() => alert("La page espace vendeur doit être implémentée par Nicolas.")}
+                className="bg-[#17deca] hover:bg-[#17deca]/95 text-[#003830] font-bold text-xs px-6 py-3.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95 shadow-[0_0_15px_rgba(23,222,202,0.3)] font-sans"
+              >
+                Ajouter un Bolide
+              </button>
+              <button 
+                onClick={onLogout}
+                className="bg-white/5 hover:bg-white/10 text-zinc-300 font-bold text-xs px-6 py-3.5 rounded-lg uppercase tracking-wider cursor-pointer border border-white/10 transition-all active:scale-95 font-sans"
+              >
+                Déconnexion
+              </button>
+            </div>
+          </div>
+        </main>
+
+        <footer className="bg-[#0e0e0e] border-t border-white/5 py-12 text-[#cdc3d4]/40 text-xs font-mono">
+          <div className="max-w-[1440px] mx-auto px-4 md:px-16 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <p>© 2026 Mercato Nova. Tous droits réservés.</p>
+            <div className="flex items-center space-x-2 text-[10px] uppercase text-tertiary">
+              <Shield size={12} />
+              <span>Bouclier de Vente Vérifié</span>
+            </div>
+          </div>
+        </footer>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#131313] text-[#e5e2e1] antialiased overflow-x-hidden font-sans pt-24 selection:bg-primary selection:text-[#460283]">
@@ -669,10 +816,24 @@ function Home({ user, onLogout, onLoginRequest }) {
 
           {/* Onglets Principaux */}
           <div className="hidden lg:flex gap-8 items-center font-semibold text-sm">
-            <a className="text-[#bb86fc] border-b-2 border-[#bb86fc] pb-1 cursor-pointer transition-colors" href="#">Voitures</a>
-            <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Pièces</a>
-            <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Enchères</a>
-            <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Préparations</a>
+            <button 
+              onClick={() => setSalesFilter('all')}
+              className="text-[#bb86fc] border-b-2 border-[#bb86fc] pb-1 cursor-pointer transition-colors font-semibold text-sm bg-transparent border-none"
+            >
+              Catalogue
+            </button>
+            <button 
+              onClick={() => onNavigate('auctions_list')}
+              className="text-[#cdc3d4] hover:text-[#e5e2e1] pb-1 cursor-pointer transition-colors font-semibold text-sm bg-transparent border-none"
+            >
+              Enchères
+            </button>
+            <button 
+              onClick={() => alert("Espace Préparations bientôt disponible (Gabin / Préparations)")}
+              className="text-[#cdc3d4] hover:text-[#e5e2e1] pb-1 cursor-pointer transition-colors bg-transparent border-none font-semibold text-sm"
+            >
+              Préparations
+            </button>
           </div>
 
           {/* Recherche & Icônes d'action */}
@@ -885,7 +1046,7 @@ function Home({ user, onLogout, onLoginRequest }) {
                 )}
               </div>
 
-              {/* Menu Profil avec Dropdown - OPAQUE (bg-[#1c1b1b] sans transparence overlapping) */}
+              {/* Menu Profil avec Dropdown - OPAQUE */}
               <div className="relative">
                 <button 
                   onClick={toggleProfile}
@@ -900,7 +1061,6 @@ function Home({ user, onLogout, onLoginRequest }) {
                 {/* Dropdown Menu de Profil OPAQUE */}
                 {showProfileMenu && (
                   <>
-                    {/* Backdrop invisible pour fermer le menu lors d'un clic en dehors */}
                     <div 
                       onClick={() => setShowProfileMenu(false)}
                       className="fixed inset-0 z-30"
@@ -918,9 +1078,13 @@ function Home({ user, onLogout, onLoginRequest }) {
                           <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded bg-secondary/10 text-secondary border border-secondary/20 text-[8px] font-bold uppercase tracking-wider shadow-[0_0_8px_rgba(255,178,188,0.15)]">
                             <Shield size={8} /> Admin VIP
                           </span>
+                        ) : user?.role === 'seller' ? (
+                          <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary border border-tertiary/20 text-[8px] font-bold uppercase tracking-wider">
+                            <Cpu size={8} /> Vendeur
+                          </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[8px] font-bold uppercase tracking-wider">
-                            <User size={8} /> Pilote / Vendeur
+                            <User size={8} /> Client
                           </span>
                         )}
                       </div>
@@ -951,13 +1115,16 @@ function Home({ user, onLogout, onLoginRequest }) {
                         <span>Mes achats</span>
                       </button>
                       
-                      <button 
-                        onClick={() => { setShowProfileMenu(false); alert("Ouverture de l'espace Vendeur (Gestion des véhicules et pièces)"); }}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-[#cdc3d4] hover:text-[#17deca] hover:bg-[#17deca]/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1 pt-1.5"
-                      >
-                        <Cpu size={14} className="text-[#17deca]" />
-                        <span>Espace vendeur</span>
-                      </button>
+                      {/* Cacher l'espace vendeur pour les clients de type buyer */}
+                      {user?.role !== 'buyer' && (
+                        <button 
+                          onClick={() => { setShowProfileMenu(false); alert("La page espace vendeur doit être implémentée par Nicolas."); }}
+                          className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-[#cdc3d4] hover:text-[#17deca] hover:bg-[#17deca]/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1 pt-1.5"
+                        >
+                          <Cpu size={14} className="text-[#17deca]" />
+                          <span>Espace vendeur</span>
+                        </button>
+                      )}
 
                       {/* Lien Administrateur Conditionnel */}
                       {canModerate && (
@@ -1133,6 +1300,17 @@ function Home({ user, onLogout, onLoginRequest }) {
 
         {/* Grille du Catalogue Produits */}
         <section className="col-span-4 lg:col-span-9 space-y-6">
+
+          {/* Bannière Modérateur Admin */}
+          {user?.role === 'admin' && (
+            <div className="bg-[#ffb2bc]/5 border border-[#ffb2bc]/20 rounded-xl p-4 flex items-center justify-between font-mono text-xs text-[#ffb2bc] shadow-[0_0_15px_rgba(255,178,188,0.05)] animate-in fade-in duration-300 relative z-10">
+              <div className="flex items-center gap-2.5">
+                <Shield size={16} />
+                <span><strong>Mode Modérateur Actif</strong> — Droits de modération globale et suppression d'annonces activés.</span>
+              </div>
+              <span className="text-[9px] bg-[#ffb2bc]/10 px-2 py-0.5 rounded uppercase tracking-wider font-bold">Admin Console</span>
+            </div>
+          )}
 
           {/* En-tête de section */}
           <div className="flex justify-between items-end border-b border-white/5 pb-4">
@@ -1327,45 +1505,62 @@ function Home({ user, onLogout, onLoginRequest }) {
                     )}
 
                     {/* Bloc d'Actions interactives */}
-                    <div className="flex justify-between items-center gap-3 mt-4 pt-1">
-                      {product.category !== 'Voitures JDM' ? (
-                        <>
-                          <div className="font-extrabold text-base md:text-lg text-zinc-100 font-mono">
-                            ${product.price.toLocaleString()}
-                          </div>
+                    <div className="flex flex-col justify-between h-full">
+                      <div className="flex justify-between items-center gap-3 mt-4 pt-1">
+                        {product.category !== 'Voitures JDM' ? (
+                          <>
+                            <div className="font-extrabold text-base md:text-lg text-zinc-100 font-mono">
+                              ${product.price.toLocaleString()}
+                            </div>
+                            <button
+                              onClick={() => handleAddToCart(product)}
+                              className="bg-white/10 hover:bg-white/20 text-[#e5e2e1] text-xs font-semibold px-4.5 py-2.5 rounded-lg transition-all cursor-pointer active:scale-95"
+                            >
+                              Ajouter au Panier
+                            </button>
+                          </>
+                        ) : product.status === 'Enchère en Cours' ? (
+                          <>
+                            <div className="flex items-center space-x-1.5 text-xs text-[#ffb2bc] font-semibold animate-pulse">
+                              <Timer size={14} />
+                              <span>6j 23h restants</span>
+                            </div>
+                            <button
+                              onClick={() => onSelectAuction(product)}
+                              className="neon-border-btn text-xs font-bold px-6 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer active:scale-95"
+                            >
+                              Placer une Offre
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center space-x-1.5 text-xs text-[#17deca] font-semibold">
+                              <Landmark size={14} />
+                              <span>Entiercement Vérifié</span>
+                            </div>
+                            <button
+                              onClick={() => alert(`Négociation ouverte pour la ${product.model}. Une fois le backend connecté par Nicolas, cette action enverra une offre en base.`)}
+                              className="bg-white/10 hover:bg-[#ffb2bc]/15 border border-white/10 hover:border-[#ffb2bc]/30 text-[#e5e2e1] text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95"
+                            >
+                              Négocier le Prix
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Bouton de suppression Admin conditionnel */}
+                      {user?.role === 'admin' && (
+                        <div className="mt-4 pt-3 border-t border-white/5 flex justify-end">
                           <button
-                            onClick={() => handleAddToCart(product)}
-                            className="bg-white/10 hover:bg-white/20 text-[#e5e2e1] text-xs font-semibold px-4.5 py-2.5 rounded-lg transition-all cursor-pointer active:scale-95"
+                            type="button"
+                            onClick={() => handleAdminDelete(product.id, product.model)}
+                            className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-secondary hover:text-red-400 hover:bg-secondary/5 px-2.5 py-1.5 rounded transition-all cursor-pointer"
                           >
-                            Ajouter au Panier
+                            <X size={12} />
+                            <span>Supprimer l'annonce (Admin)</span>
                           </button>
-                        </>
-                      ) : product.status === 'Enchère en Cours' ? (
-                        <>
-                          <div className="flex items-center space-x-1.5 text-xs text-[#ffb2bc] font-semibold animate-pulse">
-                            <Timer size={14} />
-                            <span>6j 23h restants</span>
-                          </div>
-                          <button
-                            onClick={() => isAuthenticated ? setBiddingProduct(product) : requestAuthentication("Vous devez etre connecte pour encherir.")}
-                            className="neon-border-btn text-xs font-bold px-6 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer active:scale-95"
-                          >
-                            Placer une Offre
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex items-center space-x-1.5 text-xs text-[#17deca] font-semibold">
-                            <Landmark size={14} />
-                            <span>Entiercement Vérifié</span>
-                          </div>
-                          <button
-                            onClick={() => isAuthenticated ? alert(`Négociation ouverte pour la ${product.model}. Une fois le backend connecté par Nicolas, cette action enverra une offre en base.`) : requestAuthentication("Vous devez etre connecte pour negocier.")}
-                            className="bg-white/10 hover:bg-[#ffb2bc]/15 border border-white/10 hover:border-[#ffb2bc]/30 text-[#e5e2e1] text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95"
-                          >
-                            Négocier le Prix
-                          </button>
-                        </>
+</div>
+                      )}
                       )}
                     </div>
                   </div>
@@ -1415,116 +1610,7 @@ function Home({ user, onLogout, onLoginRequest }) {
         />
       )}
 
-      {/* Modal d'Enchère Interactive */}
-      {biddingProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
 
-          {/* Arrière-plan flouté */}
-          <div
-            onClick={() => setBiddingProduct(null)}
-            className="absolute inset-0 bg-[#000]/70 backdrop-blur-md cursor-pointer"
-          ></div>
-
-          <div className="glass-panel w-full max-w-lg rounded-2xl overflow-hidden relative z-10 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-200">
-
-            {/* Titre Modal */}
-            <div className="p-6 pb-4 border-b border-white/5 flex justify-between items-center bg-[#1c1b1b]/70">
-              <div className="flex items-center space-x-2">
-                <Timer className="text-secondary" size={18} />
-                <h3 className="font-extrabold text-base uppercase tracking-wider">Placer une Offre du Syndicat</h3>
-              </div>
-              <button
-                onClick={() => setBiddingProduct(null)}
-                className="text-[#cdc3d4]/50 hover:text-white p-1 rounded-full hover:bg-white/5 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Contenu Modal */}
-            <div className="p-6 space-y-5">
-
-              {bidSuccess ? (
-                <div className="py-8 text-center space-y-3">
-                  <div className="w-16 h-16 bg-[#17deca]/10 border border-[#17deca]/30 rounded-full flex items-center justify-center mx-auto text-[#17deca]">
-                    <Check size={28} className="animate-in zoom-in duration-300" />
-                  </div>
-                  <h4 className="font-bold text-lg text-zinc-100">Enchère Enregistrée !</h4>
-                  <p className="text-xs font-mono text-[#cdc3d4]/70">
-                    Votre offre a été enregistrée avec succès. Base de données simulée synchronisée.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex space-x-4">
-                    <img
-                      alt={biddingProduct.model}
-                      className="w-24 h-18 object-cover rounded-lg border border-white/10 flex-shrink-0"
-                      src={biddingProduct.image}
-                    />
-                    <div>
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase">{biddingProduct.brand}</span>
-                      <h4 className="font-extrabold text-sm text-zinc-200">{biddingProduct.year} {biddingProduct.model}</h4>
-                      <p className="text-xs text-[#bb86fc] font-mono font-bold mt-1">
-                        Offre Actuelle : ${biddingProduct.price.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Formulaire d'Enchère */}
-                  <form onSubmit={handleBidSubmit} className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-[#cdc3d4]/50 font-mono">
-                        Votre offre (USD)
-                      </label>
-                      <div className="relative rounded-lg border border-white/10 input-glow bg-[#1c1b1b]">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono font-bold text-sm text-[#cdc3d4]/40">$</span>
-                        <input
-                          required
-                          type="number"
-                          className="w-full bg-transparent border-none py-3 pl-8 pr-4 text-sm font-mono text-white focus:outline-none focus:ring-0 placeholder-zinc-700"
-                          placeholder={`${(biddingProduct.price + 1000).toString()}`}
-                          min={biddingProduct.price + 1}
-                          value={bidAmount}
-                          onChange={(e) => setBidAmount(e.target.value)}
-                        />
-                      </div>
-                      <span className="text-[10px] font-mono text-zinc-500 block">
-                        Incrément minimum : 1 $. Saisissez le montant de votre choix.
-                      </span>
-                    </div>
-
-                    {/* Historique des Enchères */}
-                    <div className="bg-[#1c1b1b]/50 p-4 rounded-xl space-y-2.5">
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase block tracking-wider font-semibold">Historique en Direct du Syndicat</span>
-                      <div className="space-y-2 max-h-24 overflow-y-auto pr-1">
-                        {bidHistory.map((historyItem, i) => (
-                          <div key={i} className="flex justify-between items-center text-xs">
-                            <span className="font-mono text-[#cdc3d4]">{historyItem.bidder}</span>
-                            <div className="space-x-3 text-right">
-                              <span className="font-mono font-bold text-[#bb86fc]">${historyItem.amount.toLocaleString()}</span>
-                              <span className="text-[10px] text-zinc-500 font-mono">{historyItem.date}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full bg-[#bb86fc] hover:bg-[#bb86fc]/80 text-[#460283] font-bold text-xs py-3 rounded-lg uppercase tracking-wider cursor-pointer transition-all flex items-center justify-center space-x-1.5 shadow-[0_0_20px_rgba(187,134,252,0.3)]"
-                    >
-                      <Zap size={14} />
-                      <span>Confirmer l'Offre</span>
-                    </button>
-                  </form>
-                </>
-              )}
-
-            </div>
-          </div>
-        </div>
-      )}
 
       {(editingProduct || addingProduct) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -1622,14 +1708,14 @@ function Home({ user, onLogout, onLoginRequest }) {
       {/* Menu mobile (Mobile Only) */}
       <nav className="bg-[#1c1b1b]/90 backdrop-blur-md text-[#bb86fc] fixed bottom-0 w-full z-40 rounded-t-2xl border-t border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] flex justify-around items-center h-16 px-4 lg:hidden">
         <button
-          onClick={() => { setSelectedCategories(['Voitures JDM', 'Pièces Performance', 'Accessoires']); setSelectedBrand(null); }}
+          onClick={() => { setSelectedCategories(['Voitures JDM', 'Pièces Performance', 'Accessoires']); setSelectedBrand(null); setSalesFilter('all'); }}
           className="flex flex-col items-center justify-center text-[#bb86fc] filter drop-shadow-[0_0_8px_rgba(187,134,252,0.6)] active:scale-105 transition-transform"
         >
           <Compass size={18} className="mb-0.5" />
           <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Boutique</span>
         </button>
         <button
-          onClick={() => { setSelectedCategories(['Voitures JDM']); setSelectedBrand(null); }}
+          onClick={() => onNavigate('auctions_list')}
           className="flex flex-col items-center justify-center text-[#cdc3d4] hover:text-[#bb86fc] active:scale-105 transition-transform"
         >
           <Timer size={18} className="mb-0.5" />
