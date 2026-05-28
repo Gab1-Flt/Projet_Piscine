@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import Login from './views/Login';
 import Home from './views/Home';
+import AuctionsList from './views/AuctionsList';
+import Auction from './views/Auction';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  
+  // Navigation réactive entre catalogue, liste des enchères, et enchère live
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'auctions_list', 'auction'
+  const [activeAuctionProduct, setActiveAuctionProduct] = useState(null);
 
-  // Charger la session persistante au démarrage (Premium UX)
+  // Charger la session persistante au démarrage
   useEffect(() => {
     try {
       const active = localStorage.getItem('mn_session_active') === 'true';
@@ -29,6 +35,7 @@ function App() {
   const handleLogin = (userData) => {
     setUser(userData);
     setIsLoggedIn(true);
+    setCurrentView('home');
     try {
       localStorage.setItem('mn_session_active', 'true');
       localStorage.setItem('mn_session_email', userData.email);
@@ -42,6 +49,8 @@ function App() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUser(null);
+    setCurrentView('home');
+    setActiveAuctionProduct(null);
     try {
       localStorage.removeItem('mn_session_active');
       localStorage.removeItem('mn_session_email');
@@ -66,8 +75,35 @@ function App() {
     <>
       {!isLoggedIn ? (
         <Login onLogin={handleLogin} />
+      ) : currentView === 'home' ? (
+        <Home 
+          user={user} 
+          onLogout={handleLogout} 
+          onSelectAuction={(product) => {
+            console.log("App: Navigating to auction view for:", product);
+            setActiveAuctionProduct(product);
+            setCurrentView('auction');
+          }}
+          onNavigate={(view) => setCurrentView(view)}
+        />
+      ) : currentView === 'auctions_list' ? (
+        <AuctionsList
+          user={user}
+          onLogout={handleLogout}
+          onSelectAuction={(product) => {
+            console.log("App: Navigating to auction view for:", product);
+            setActiveAuctionProduct(product);
+            setCurrentView('auction');
+          }}
+          onNavigate={(view) => setCurrentView(view)}
+        />
       ) : (
-        <Home user={user} onLogout={handleLogout} />
+        <Auction 
+          user={user} 
+          product={activeAuctionProduct} 
+          onBack={() => setCurrentView('auctions_list')} 
+          onLogout={handleLogout}
+        />
       )}
     </>
   );

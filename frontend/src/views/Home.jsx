@@ -5,7 +5,7 @@ import {
   Check, X, Zap, Cpu, Compass, Landmark, Heart, LogOut
 } from 'lucide-react';
 
-function Home({ user, onLogout }) {
+function Home({ user, onLogout, onSelectAuction, onNavigate }) {
   // Jeu de données des produits traduit en français, en lien avec init.sql
   const initialProducts = [
     {
@@ -137,14 +137,7 @@ function Home({ user, onLogout }) {
     { id: 3, sender: "Célestin (Admin)", snippet: "Réseau crypté opérationnel.", time: "Hier", online: true }
   ]);
 
-  // États de l'enchère interactive
-  const [biddingProduct, setBiddingProduct] = useState(null);
-  const [bidAmount, setBidAmount] = useState('');
-  const [bidSuccess, setBidSuccess] = useState(false);
-  const [bidHistory, setBidHistory] = useState([
-    { bidder: 'keiichi_tsuchiya', amount: 180000, date: 'Il y a 10 min' },
-    { bidder: 'takumi_86', amount: 175000, date: 'Il y a 2 heures' }
-  ]);
+
 
   // Fermer les autres menus lors de l'ouverture d'un nouveau menu
   const toggleNotifications = () => {
@@ -218,34 +211,7 @@ function Home({ user, onLogout }) {
     return matchesSearch && matchesCategory && matchesBrand && matchesFavorites && matchesSalesType;
   });
 
-  // Soumission d'une enchère
-  const handleBidSubmit = (e) => {
-    e.preventDefault();
-    const numericBid = parseFloat(bidAmount);
-    if (isNaN(numericBid) || numericBid <= biddingProduct.price) {
-      alert(`Votre offre doit être strictement supérieure à l'offre actuelle ($${biddingProduct.price.toLocaleString()})`);
-      return;
-    }
 
-    setProducts(products.map(p => {
-      if (p.id === biddingProduct.id) {
-        return { ...p, price: numericBid };
-      }
-      return p;
-    }));
-
-    setBidHistory([
-      { bidder: 'Vous (gabin_lead)', amount: numericBid, date: 'À l\'instant' },
-      ...bidHistory
-    ]);
-
-    setBidSuccess(true);
-    setTimeout(() => {
-      setBiddingProduct(null);
-      setBidSuccess(false);
-      setBidAmount('');
-    }, 1800);
-  };
 
   const handleAddToCart = (product) => {
     setCartItems(prev => [...prev, product]);
@@ -432,9 +398,24 @@ function Home({ user, onLogout }) {
 
           {/* Onglets Principaux */}
           <div className="hidden lg:flex gap-8 items-center font-semibold text-sm">
-            <a className="text-[#bb86fc] border-b-2 border-[#bb86fc] pb-1 cursor-pointer transition-colors" href="#">Catalogue</a>
-            <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Enchères</a>
-            <a className="text-[#cdc3d4] hover:text-[#e5e2e1] px-3 py-2 rounded hover:bg-white/5 transition-all duration-200" href="#">Préparations</a>
+            <button 
+              onClick={() => setSalesFilter('all')}
+              className="text-[#bb86fc] border-b-2 border-[#bb86fc] pb-1 cursor-pointer transition-colors font-semibold text-sm bg-transparent border-none"
+            >
+              Catalogue
+            </button>
+            <button 
+              onClick={() => onNavigate('auctions_list')}
+              className="text-[#cdc3d4] hover:text-[#e5e2e1] pb-1 cursor-pointer transition-colors font-semibold text-sm bg-transparent border-none"
+            >
+              Enchères
+            </button>
+            <button 
+              onClick={() => alert("Espace Préparations bientôt disponible (Gabin / Préparations)")}
+              className="text-[#cdc3d4] hover:text-[#e5e2e1] pb-1 cursor-pointer transition-colors bg-transparent border-none font-semibold text-sm"
+            >
+              Préparations
+            </button>
           </div>
 
           {/* Recherche & Icônes d'action */}
@@ -1031,7 +1012,7 @@ function Home({ user, onLogout }) {
                               <span>6j 23h restants</span>
                             </div>
                             <button
-                              onClick={() => setBiddingProduct(product)}
+                              onClick={() => onSelectAuction(product)}
                               className="neon-border-btn text-xs font-bold px-6 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer active:scale-95"
                             >
                               Placer une Offre
@@ -1097,128 +1078,19 @@ function Home({ user, onLogout }) {
         </section>
       </main>
 
-      {/* Modal d'Enchère Interactive */}
-      {biddingProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
 
-          {/* Arrière-plan flouté */}
-          <div
-            onClick={() => setBiddingProduct(null)}
-            className="absolute inset-0 bg-[#000]/70 backdrop-blur-md cursor-pointer"
-          ></div>
-
-          <div className="glass-panel w-full max-w-lg rounded-2xl overflow-hidden relative z-10 border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-200">
-
-            {/* Titre Modal */}
-            <div className="p-6 pb-4 border-b border-white/5 flex justify-between items-center bg-[#1c1b1b]/70">
-              <div className="flex items-center space-x-2">
-                <Timer className="text-secondary" size={18} />
-                <h3 className="font-extrabold text-base uppercase tracking-wider">Placer une Offre du Syndicat</h3>
-              </div>
-              <button
-                onClick={() => setBiddingProduct(null)}
-                className="text-[#cdc3d4]/50 hover:text-white p-1 rounded-full hover:bg-white/5 cursor-pointer"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Contenu Modal */}
-            <div className="p-6 space-y-5">
-
-              {bidSuccess ? (
-                <div className="py-8 text-center space-y-3">
-                  <div className="w-16 h-16 bg-[#17deca]/10 border border-[#17deca]/30 rounded-full flex items-center justify-center mx-auto text-[#17deca]">
-                    <Check size={28} className="animate-in zoom-in duration-300" />
-                  </div>
-                  <h4 className="font-bold text-lg text-zinc-100">Enchère Enregistrée !</h4>
-                  <p className="text-xs font-mono text-[#cdc3d4]/70">
-                    Votre offre a été enregistrée avec succès. Base de données simulée synchronisée.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex space-x-4">
-                    <img
-                      alt={biddingProduct.model}
-                      className="w-24 h-18 object-cover rounded-lg border border-white/10 flex-shrink-0"
-                      src={biddingProduct.image}
-                    />
-                    <div>
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase">{biddingProduct.brand}</span>
-                      <h4 className="font-extrabold text-sm text-zinc-200">{biddingProduct.year} {biddingProduct.model}</h4>
-                      <p className="text-xs text-[#bb86fc] font-mono font-bold mt-1">
-                        Offre Actuelle : ${biddingProduct.price.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Formulaire d'Enchère */}
-                  <form onSubmit={handleBidSubmit} className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold uppercase tracking-wider text-[#cdc3d4]/50 font-mono">
-                        Votre offre (USD)
-                      </label>
-                      <div className="relative rounded-lg border border-white/10 input-glow bg-[#1c1b1b]">
-                        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-mono font-bold text-sm text-[#cdc3d4]/40">$</span>
-                        <input
-                          required
-                          type="number"
-                          className="w-full bg-transparent border-none py-3 pl-8 pr-4 text-sm font-mono text-white focus:outline-none focus:ring-0 placeholder-zinc-700"
-                          placeholder={`${(biddingProduct.price + 1000).toString()}`}
-                          min={biddingProduct.price + 1}
-                          value={bidAmount}
-                          onChange={(e) => setBidAmount(e.target.value)}
-                        />
-                      </div>
-                      <span className="text-[10px] font-mono text-zinc-500 block">
-                        Incrément minimum : 1 $. Saisissez le montant de votre choix.
-                      </span>
-                    </div>
-
-                    {/* Historique des Enchères */}
-                    <div className="bg-[#1c1b1b]/50 p-4 rounded-xl space-y-2.5">
-                      <span className="text-[10px] font-mono text-zinc-500 uppercase block tracking-wider font-semibold">Historique en Direct du Syndicat</span>
-                      <div className="space-y-2 max-h-24 overflow-y-auto pr-1">
-                        {bidHistory.map((historyItem, i) => (
-                          <div key={i} className="flex justify-between items-center text-xs">
-                            <span className="font-mono text-[#cdc3d4]">{historyItem.bidder}</span>
-                            <div className="space-x-3 text-right">
-                              <span className="font-mono font-bold text-[#bb86fc]">${historyItem.amount.toLocaleString()}</span>
-                              <span className="text-[10px] text-zinc-500 font-mono">{historyItem.date}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full bg-[#bb86fc] hover:bg-[#bb86fc]/80 text-[#460283] font-bold text-xs py-3 rounded-lg uppercase tracking-wider cursor-pointer transition-all flex items-center justify-center space-x-1.5 shadow-[0_0_20px_rgba(187,134,252,0.3)]"
-                    >
-                      <Zap size={14} />
-                      <span>Confirmer l'Offre</span>
-                    </button>
-                  </form>
-                </>
-              )}
-
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Menu mobile (Mobile Only) */}
       <nav className="bg-[#1c1b1b]/90 backdrop-blur-md text-[#bb86fc] fixed bottom-0 w-full z-40 rounded-t-2xl border-t border-white/10 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] flex justify-around items-center h-16 px-4 lg:hidden">
         <button
-          onClick={() => { setSelectedCategories(['Voitures JDM', 'Pièces Performance', 'Accessoires']); setSelectedBrand(null); }}
+          onClick={() => { setSelectedCategories(['Voitures JDM', 'Pièces Performance', 'Accessoires']); setSelectedBrand(null); setSalesFilter('all'); }}
           className="flex flex-col items-center justify-center text-[#bb86fc] filter drop-shadow-[0_0_8px_rgba(187,134,252,0.6)] active:scale-105 transition-transform"
         >
           <Compass size={18} className="mb-0.5" />
           <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Boutique</span>
         </button>
         <button
-          onClick={() => { setSelectedCategories(['Voitures JDM']); setSelectedBrand(null); }}
+          onClick={() => onNavigate('auctions_list')}
           className="flex flex-col items-center justify-center text-[#cdc3d4] hover:text-[#bb86fc] active:scale-105 transition-transform"
         >
           <Timer size={18} className="mb-0.5" />
