@@ -1,5 +1,6 @@
 import React from 'react';
 import { Shield, Sparkles, Cpu, Database, ChevronRight, Layers, FileText } from 'lucide-react';
+import ProductList from './components/features/ProductList';
 
 function App() {
   const team = [
@@ -18,7 +19,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-carbon-950 text-carbon-100 flex flex-col justify-between selection:bg-redline selection:text-white">
-      
+
       {/* Decorative JDM Grid Background */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none"></div>
 
@@ -41,7 +42,7 @@ function App() {
 
       {/* Main Developer Welcome Area */}
       <main className="relative max-w-7xl mx-auto px-6 py-16 flex-grow flex flex-col justify-center z-10 w-full">
-        
+
         {/* Hero Alert */}
         <div className="max-w-3xl mb-12">
           <div className="inline-flex items-center space-x-2 bg-redline/10 text-redline px-3 py-1 rounded-full text-xs font-semibold mb-6 border border-redline/25">
@@ -60,7 +61,7 @@ function App() {
 
         {/* Dashboard Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* Tech Stack Specs */}
           <div className="lg:col-span-1 glass-panel rounded-2xl p-6 flex flex-col justify-between">
             <div>
@@ -82,7 +83,7 @@ function App() {
                 ))}
               </div>
             </div>
-            
+
             <div className="mt-8 pt-6 border-t border-carbon-700/50 flex items-center justify-between text-xs text-carbon-300 font-mono">
               <span>Host Port: 5173</span>
               <span>CORS: Enabled (*)</span>
@@ -95,7 +96,7 @@ function App() {
               <Layers className="text-driftgold" size={20} />
               <h3 className="font-bold text-lg">Organisation Technique de l'Équipe</h3>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {team.map((member, i) => (
                 <div key={i} className="p-4 rounded-xl bg-carbon-900 border border-carbon-700/50 hover:border-carbon-700 transition duration-200">
@@ -125,6 +126,8 @@ function App() {
           </div>
 
         </div>
+
+        <ProductList />
 
       </main>
 
