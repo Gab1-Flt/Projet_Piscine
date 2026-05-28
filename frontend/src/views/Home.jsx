@@ -440,6 +440,19 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
     saleType: 'direct',
     verified: true
   });
+  const [proposingListing, setProposingListing] = useState(false);
+  const [newProposal, setNewProposal] = useState({
+    brand: 'Toyota',
+    model: 'Supra RZ (JZA80)',
+    year: 1997,
+    price: 110000,
+    mileage: 82000,
+    category: 'Voitures JDM',
+    saleType: 'auction',
+    image: 'https://images.unsplash.com/photo-1616422285623-13ff0162193c?auto=format&fit=crop&w=800&q=80',
+    description: "Etat d'origine impeccable, carnet d'entretien japonais complet."
+  });
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState(['Voitures JDM', 'Pièces Performance', 'Accessoires']);
   const [selectedBrand, setSelectedBrand] = useState(null);
@@ -565,6 +578,40 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
     if (!canModerate) return;
     writeStoredList('mn_deleted_emails', email);
     setAdminUsers(prev => prev.filter(account => account.email !== email));
+  };
+
+  const handleProposeListingSubmit = (e) => {
+    e.preventDefault();
+    if (!isAuthenticated) return;
+
+    if (!newProposal.brand || !newProposal.model || !newProposal.year || !newProposal.price) {
+      alert("Veuillez remplir tous les champs obligatoires (Marque, Modèle, Année, Prix).");
+      return;
+    }
+
+    const nextId = Math.max(...pendingListings.map(item => item.id), 100) + 1;
+    const listingToAdd = {
+      id: nextId,
+      brand: newProposal.brand,
+      model: newProposal.model,
+      year: Number(newProposal.year),
+      price: Number(newProposal.price),
+      mileage: newProposal.mileage ? Number(newProposal.mileage) : null,
+      sellerEmail: user.email,
+      sellerName: `${user.firstName || 'Pilote'} ${user.lastName || 'Nova'}`,
+      sellerPhone: user.phone || '+33 6 12 34 56 78',
+      identityStatus: 'a verifier',
+      idCardCriteria: ['recto verso lisible', 'date valide', 'nom identique au compte'],
+      image: newProposal.image || 'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&w=800&q=80',
+      category: newProposal.category,
+      saleType: newProposal.saleType,
+      status: 'En attente',
+      reason: newProposal.description || 'Annonce créée et personnalisée par le vendeur.',
+    };
+
+    setPendingListings(prev => [listingToAdd, ...prev]);
+    setProposingListing(false);
+    alert("Votre annonce personnalisée a été soumise avec succès à la modération. Elle apparaît dans la console admin !");
   };
 
   // Fermer les autres menus lors de l'ouverture d'un nouveau menu
@@ -1204,29 +1251,10 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
             <button
               onClick={() => {
                 if (!isAuthenticated) {
-                  requestAuthentication("Vous devez etre connecte pour ajouter une annonce au catalogue.");
+                  requestAuthentication("Vous devez etre connecte pour proposer une annonce au catalogue.");
                   return;
                 }
-                const nextId = Math.max(...pendingListings.map(item => item.id), 100) + 1;
-                setPendingListings(prev => [{
-                  id: nextId,
-                  brand: 'Honda',
-                  model: 'Civic Type R EK9',
-                  year: 1998,
-                  price: 36000,
-                  mileage: 92000,
-                  sellerEmail: user.email,
-                  sellerName: `${user.firstName || 'Vendeur'} ${user.lastName || 'Mercato'}`,
-                  sellerPhone: user.phone || 'A renseigner',
-                  identityStatus: 'a verifier',
-                  idCardCriteria: ['recto verso lisible', 'date valide', 'nom identique au compte'],
-                  image: 'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&w=800&q=80',
-                  category: 'Voitures JDM',
-                  saleType: 'negotiation',
-                  status: 'En attente',
-                  reason: 'Annonce creee depuis le catalogue par un vendeur connecte.',
-                }, ...prev]);
-                alert("Annonce envoyee en moderation. Elle apparait dans la console admin.");
+                setProposingListing(true);
               }}
               className="w-full border border-tertiary/40 text-tertiary rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider hover:bg-tertiary/10"
             >
@@ -1702,6 +1730,202 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
                 {editingProduct ? 'Enregistrer' : 'Ajouter'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fenêtre de personnalisation de l'annonce */}
+      {proposingListing && (
+        <div className="fixed inset-0 bg-[#0e0e0e]/85 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="glass-panel border border-[#17deca]/20 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative my-8">
+            <span className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[#17deca] animate-pulse"></span>
+            <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[#bb86fc] animate-pulse"></span>
+            
+            <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#1c1b1b]/50">
+              <div>
+                <h3 className="text-sm font-bold font-mono uppercase tracking-widest text-[#17deca] flex items-center gap-2">
+                  <Plus size={16} />
+                  Personnaliser votre annonce
+                </h3>
+                <p className="text-[10px] text-[#cdc3d4]/50 font-mono mt-1">
+                  Créez votre fiche produit sur mesure pour le Mercato Nova.
+                </p>
+              </div>
+              <button 
+                onClick={() => setProposingListing(false)}
+                className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleProposeListingSubmit} className="p-6 space-y-4 max-h-[65vh] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="grid grid-cols-2 gap-4">
+                <label className="space-y-1.5">
+                  <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Marque *</span>
+                  <select
+                    value={newProposal.brand}
+                    onChange={(e) => setNewProposal(prev => ({ ...prev, brand: e.target.value }))}
+                    className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca]"
+                  >
+                    {['Toyota', 'Nissan', 'Honda', 'Mitsubishi', 'Subaru', 'Mazda', 'Recaro', 'Nismo', 'HKS', 'Brembo'].map(b => (
+                      <option key={b} value={b} className="bg-[#121212]">{b}</option>
+                    ))}
+                  </select>
+                </label>
+
+                <label className="space-y-1.5">
+                  <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Modèle *</span>
+                  <input
+                    required
+                    placeholder="Ex: RX-7 FD3S Spirit R"
+                    value={newProposal.model}
+                    onChange={(e) => setNewProposal(prev => ({ ...prev, model: e.target.value }))}
+                    className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca]"
+                  />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <label className="space-y-1.5">
+                  <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Année *</span>
+                  <input
+                    type="number"
+                    required
+                    min="1960"
+                    max="2027"
+                    value={newProposal.year}
+                    onChange={(e) => setNewProposal(prev => ({ ...prev, year: Number(e.target.value) }))}
+                    className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca]"
+                  />
+                </label>
+
+                <label className="space-y-1.5">
+                  <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Prix demandé ($) *</span>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={newProposal.price}
+                    onChange={(e) => setNewProposal(prev => ({ ...prev, price: Number(e.target.value) }))}
+                    className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca]"
+                  />
+                </label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <label className="space-y-1.5">
+                  <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Kilométrage (Optionnel)</span>
+                  <input
+                    type="number"
+                    placeholder="Ex: 85000"
+                    value={newProposal.mileage || ''}
+                    onChange={(e) => setNewProposal(prev => ({ ...prev, mileage: e.target.value ? Number(e.target.value) : '' }))}
+                    className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca]"
+                  />
+                </label>
+
+                <label className="space-y-1.5">
+                  <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Catégorie</span>
+                  <select
+                    value={newProposal.category}
+                    onChange={(e) => setNewProposal(prev => ({ ...prev, category: e.target.value }))}
+                    className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca]"
+                  >
+                    <option value="Voitures JDM" className="bg-[#121212]">Voitures JDM</option>
+                    <option value="Pièces Performance" className="bg-[#121212]">Pièces Performance</option>
+                    <option value="Accessoires" className="bg-[#121212]">Accessoires</option>
+                  </select>
+                </label>
+              </div>
+
+              <label className="space-y-1.5 block">
+                <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Type de Transaction</span>
+                <div className="grid grid-cols-3 gap-2 bg-[#121212] p-1 border border-white/5 rounded-xl font-mono text-[9px] uppercase font-bold">
+                  {[
+                    { id: 'auction', label: 'Enchère', color: 'text-[#ffb2bc] border-[#ffb2bc]' },
+                    { id: 'direct', label: 'Achat direct', color: 'text-[#17deca] border-[#17deca]' },
+                    { id: 'negotiation', label: 'Négociation', color: 'text-[#bb86fc] border-[#bb86fc]' },
+                  ].map(t => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setNewProposal(prev => ({ ...prev, saleType: t.id }))}
+                      className={`py-2 rounded-lg flex items-center justify-center cursor-pointer transition-all ${
+                        newProposal.saleType === t.id
+                          ? 'bg-[#1c1b1b] border border-white/10 text-white font-black shadow-[0_0_10px_rgba(23,222,202,0.1)]'
+                          : 'text-[#cdc3d4]/50 hover:text-white'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </label>
+
+              {/* Sélection d'images prédéfinies JDM */}
+              <div className="space-y-2">
+                <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider block">Illustration de l'annonce</span>
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: 'Supra RZ', url: 'https://images.unsplash.com/photo-1616422285623-13ff0162193c?auto=format&fit=crop&w=800&q=80' },
+                    { label: 'Civic EK9', url: 'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&w=800&q=80' },
+                    { label: 'Lancer Evo', url: 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=800&q=80' },
+                    { label: 'Pièces JDM', url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=800&q=80' },
+                  ].map((img, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setNewProposal(prev => ({ ...prev, image: img.url }))}
+                      className={`relative rounded-lg overflow-hidden border transition-all h-14 ${
+                        newProposal.image === img.url ? 'border-[#17deca] ring-2 ring-[#17deca]/20 scale-95' : 'border-white/10 hover:border-white/30'
+                      }`}
+                    >
+                      <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-[#0e0e0e]/40 flex items-center justify-center">
+                        <span className="text-[8px] font-mono font-bold text-white uppercase tracking-wider">{img.label}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                <label className="space-y-1 block mt-2">
+                  <span className="text-[8px] font-mono text-[#cdc3d4]/40 uppercase block">Ou lien de votre propre image :</span>
+                  <input
+                    placeholder="https://..."
+                    value={newProposal.image}
+                    onChange={(e) => setNewProposal(prev => ({ ...prev, image: e.target.value }))}
+                    className="w-full bg-[#1c1b1b]/50 border border-white/5 rounded-lg px-3 py-1.5 text-[10px] font-mono text-[#cdc3d4] focus:outline-none focus:border-[#17deca]"
+                  />
+                </label>
+              </div>
+
+              <label className="space-y-1.5 block">
+                <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Description de l'objet / Remarques</span>
+                <textarea
+                  rows="3"
+                  placeholder="Expliquez l'état général de votre voiture ou de votre pièce (ex: historique, modifications, entretien...)"
+                  value={newProposal.description}
+                  onChange={(e) => setNewProposal(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca] resize-none"
+                />
+              </label>
+
+              <div className="pt-4 border-t border-white/5 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setProposingListing(false)}
+                  className="border border-white/10 hover:bg-white/5 text-[#cdc3d4] rounded-lg px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider cursor-pointer active:scale-95"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="bg-[#17deca] hover:bg-[#17deca]/90 text-[#003830] rounded-lg px-5 py-2 text-xs font-mono font-bold uppercase tracking-wider shadow-[0_0_12px_rgba(23,222,202,0.3)] cursor-pointer active:scale-95"
+                >
+                  Soumettre l'annonce
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
