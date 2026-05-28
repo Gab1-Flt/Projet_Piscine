@@ -26,6 +26,7 @@ function AdminWorkspace({
   onApproveListing,
   onRejectListing,
   onBanUser,
+  onUnbanUser,
   onDeleteUser,
   onDeleteProduct,
   onOpenEdit,
@@ -228,6 +229,9 @@ function AdminWorkspace({
                       <td className="p-4 text-right space-x-1.5">
                         {account.status !== 'banned' && account.role !== 'directeur' && (
                           <button onClick={() => onBanUser(account.email)} className="border border-red-500/20 text-red-400/80 hover:bg-red-500/10 px-2.5 py-1.5 rounded text-[9px] uppercase tracking-wider font-bold transition-all">Bannir</button>
+                        )}
+                        {account.status === 'banned' && account.role !== 'directeur' && (
+                          <button onClick={() => onUnbanUser(account.email)} className="border border-green-500/20 text-green-400/80 hover:bg-green-500/10 px-2.5 py-1.5 rounded text-[9px] uppercase tracking-wider font-bold transition-all">Débannir</button>
                         )}
                         {account.role !== 'directeur' && (
                           <button onClick={() => onDeleteUser(account.email)} className="border border-white/10 text-[#cdc3d4]/50 hover:bg-white/5 px-2.5 py-1.5 rounded text-[9px] uppercase tracking-wider font-bold transition-all">Effacer</button>
@@ -544,6 +548,17 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
     if (!canModerate) return;
     writeStoredList('mn_banned_emails', email);
     setAdminUsers(prev => prev.map(account => account.email === email ? { ...account, status: 'banned' } : account));
+  };
+
+  const handleUnbanUser = (email) => {
+    if (!canModerate) return;
+    try {
+      const current = JSON.parse(localStorage.getItem('mn_banned_emails') || '[]');
+      localStorage.setItem('mn_banned_emails', JSON.stringify(current.filter(item => item !== email)));
+    } catch (e) {
+      console.error(e);
+    }
+    setAdminUsers(prev => prev.map(account => account.email === email ? { ...account, status: 'active' } : account));
   };
 
   const handleDeleteUser = (email) => {
@@ -1547,20 +1562,6 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
                           </>
                         )}
                       </div>
-
-                      {/* Bouton de suppression Admin conditionnel */}
-                      {user?.role === 'admin' && (
-                        <div className="mt-4 pt-3 border-t border-white/5 flex justify-end">
-                          <button
-                            type="button"
-                            onClick={() => handleAdminDelete(product.id, product.model)}
-                            className="flex items-center gap-1.5 text-[9px] font-mono font-bold text-secondary hover:text-red-400 hover:bg-secondary/5 px-2.5 py-1.5 rounded transition-all cursor-pointer"
-                          >
-                            <X size={12} />
-                            <span>Supprimer l'annonce (Admin)</span>
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
@@ -1602,6 +1603,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
           onApproveListing={handleApproveListing}
           onRejectListing={handleRejectListing}
           onBanUser={handleBanUser}
+          onUnbanUser={handleUnbanUser}
           onDeleteUser={handleDeleteUser}
           onDeleteProduct={handleDeleteProduct}
           onOpenEdit={handleOpenEditProduct}
