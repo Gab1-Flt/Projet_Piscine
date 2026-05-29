@@ -4,9 +4,10 @@ import {
   ShoppingCart, Timer, SlidersHorizontal, ArrowUpRight,
   Check, X, Zap, Cpu, Compass, Landmark, Heart, LogOut,
   Trash2, Pencil, Plus, Users, FileCheck, BarChart3, Ban,
-  AlertTriangle, UserCheck, Crown
+  AlertTriangle, UserCheck, Crown, Sparkles
 } from 'lucide-react';
 import { adminStats, initialPendingListings, mockUsers } from '../data/mockData';
+import SellerDashboard from './SellerDashboard';
 
 const roleLabels = {
   utilisateur: 'Utilisateur',
@@ -495,9 +496,16 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
 
 
 
+  const [popup, setPopup] = useState(null); // { title: string, message: string, type: 'info' | 'warning', onClose?: () => void }
+  const [confirmDialog, setConfirmDialog] = useState(null); // { title: string, message: string, onConfirm: () => void }
+
   const requestAuthentication = (message = "Connexion requise pour continuer.") => {
-    alert(message);
-    onLoginRequest?.();
+    setPopup({
+      title: "Accès Sécurisé Requis",
+      message: message,
+      type: "warning",
+      onClose: () => onLoginRequest?.()
+    });
     return false;
   };
 
@@ -594,7 +602,11 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
     if (!isAuthenticated) return;
 
     if (!newProposal.brand || !newProposal.model || !newProposal.year || !newProposal.price) {
-      alert("Veuillez remplir tous les champs obligatoires (Marque, Modèle, Année, Prix).");
+      setPopup({
+        title: "Champs Incomplets",
+        message: "Veuillez remplir tous les champs obligatoires (Marque, Modèle, Année, Prix).",
+        type: "warning"
+      });
       return;
     }
 
@@ -620,7 +632,11 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
 
     setPendingListings(prev => [listingToAdd, ...prev]);
     setProposingListing(false);
-    alert("Votre annonce personnalisée a été soumise avec succès à la modération. Elle apparaît dans la console admin !");
+    setPopup({
+      title: "Annonce Soumise",
+      message: "Votre annonce personnalisée a été soumise avec succès à la modération. Elle apparaît dans la console admin !",
+      type: "info"
+    });
   };
 
   // Fermer les autres menus lors de l'ouverture d'un nouveau menu
@@ -712,10 +728,19 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
 
   // Action administrative : supprimer un produit de la liste locale
   const handleAdminDelete = (productId, model) => {
-    if (window.confirm(`[ADMIN] Confirmer la suppression définitive du produit : ${model} ?`)) {
-      setProducts(prev => prev.filter(p => p.id !== productId));
-      alert(`Produit ${model} supprimé du catalogue.`);
-    }
+    setConfirmDialog({
+      title: "Suppression Produit [ADMIN]",
+      message: `Confirmer la suppression définitive du produit "${model}" ? Cette action est irréversible.`,
+      onConfirm: () => {
+        setProducts(prev => prev.filter(p => p.id !== productId));
+        setConfirmDialog(null);
+        setPopup({
+          title: "Produit Supprimé",
+          message: `Le produit "${model}" a été retiré avec succès du catalogue.`,
+          type: "info"
+        });
+      }
+    });
   };
 
   const handleReadNotification = (id) => {
@@ -724,338 +749,9 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
 
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
-  // Lancement de l'alerte vendeur à la connexion
-  useEffect(() => {
-    if (user?.role === 'seller') {
-      alert("La page espace vendeur doit être implémentée par Nicolas.");
-    }
-  }, [user]);
-
   // Rendu conditionnel si vendeur
   if (user?.role === 'seller') {
-    return (
-      <div className="min-h-screen bg-[#131313] text-[#e5e2e1] antialiased overflow-x-hidden font-sans pt-24 selection:bg-primary selection:text-[#460283]">
-        {/* Gradients lumineux néons en arrière-plan */}
-        <div className="absolute top-0 right-0 w-[40vw] h-[40vw] rounded-full bg-[#17deca]/5 blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-[20%] left-0 w-[35vw] h-[35vw] rounded-full bg-secondary/5 blur-[120px] pointer-events-none"></div>
-
-        {/* Navigation Vendeur */}
-        <nav className="bg-[#131313]/80 backdrop-blur-xl fixed top-0 w-full z-40 border-b border-white/10 shadow-[0_0_20px_rgba(23,222,202,0.1)]">
-          <div className="flex justify-between items-center h-20 px-4 md:px-16 w-full max-w-[1440px] mx-auto">
-            {/* Logo & Titre */}
-            <div className="flex items-center space-x-2.5">
-              <div className="w-9 h-9 rounded bg-[#17deca] flex items-center justify-center font-black tracking-tighter text-[#003830] italic text-lg shadow-[0_0_12px_rgba(23,222,202,0.4)]">
-                MN
-              </div>
-              <div>
-                <span className="font-extrabold text-lg tracking-wider text-[#dab9ff] italic uppercase">MERCATO <span className="text-[#ffb2bc]">NOVA</span></span>
-                <p className="text-[9px] text-[#cdc3d4]/50 font-mono tracking-widest -mt-1 uppercase">Tokyo Underground</p>
-              </div>
-            </div>
-
-            {/* Onglet vendeur */}
-            <div className="hidden lg:flex gap-8 items-center font-semibold text-sm">
-              <span className="text-[#17deca] border-b-2 border-[#17deca] pb-1 font-mono uppercase tracking-widest text-xs">Espace Vendeur</span>
-            </div>
-
-            {/* Profil */}
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <button 
-                  onClick={toggleProfile}
-                  className={`p-2 rounded-full transition-all active:scale-95 cursor-pointer ${
-                    showProfileMenu ? 'text-[#17deca] bg-white/5' : 'text-[#cdc3d4] hover:text-[#17deca] hover:bg-white/5'
-                  }`}
-                >
-                  <User size={20} />
-                </button>
-
-                {showProfileMenu && (
-                  <>
-                    <div onClick={() => setShowProfileMenu(false)} className="fixed inset-0 z-30"></div>
-                    <div className="absolute right-0 mt-3 w-52 rounded-xl border border-white/10 bg-[#1c1b1b] py-2 shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-40">
-                      <div className="px-4 py-2.5 border-b border-white/5 mb-1.5 text-[10px] font-mono">
-                        <span className="block text-[#cdc3d4]/40 font-bold uppercase tracking-wider text-[8px]">Réseau Vendeur</span>
-                        <span className="text-zinc-200 truncate block mt-0.5" title={user?.email}>{user?.email}</span>
-                        <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded bg-tertiary/10 text-tertiary border border-tertiary/20 text-[8px] font-bold uppercase tracking-wider">
-                          <Cpu size={8} /> Vendeur
-                        </span>
-                      </div>
-
-                      <button 
-                        onClick={() => { setShowProfileMenu(false); alert("La page espace vendeur doit être implémentée par Nicolas."); }}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-[#cdc3d4] hover:text-tertiary hover:bg-tertiary/5 transition-all text-left cursor-pointer"
-                      >
-                        <Cpu size={14} className="text-tertiary" />
-                        <span>Mon Inventaire</span>
-                      </button>
-
-                      <button 
-                        onClick={() => { setShowProfileMenu(false); onLogout(); }}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-zinc-400 hover:text-red-400 hover:bg-red-500/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1.5 pt-2"
-                      >
-                        <LogOut size={14} className="text-zinc-500" />
-                        <span>Se déconnecter</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </nav>
-
-        {/* Dashboard Placeholder */}
-        <main className="max-w-[1440px] mx-auto px-4 md:px-16 py-12 flex items-center justify-center min-h-[60vh] relative z-10">
-          <div className="glass-panel w-full max-w-2xl rounded-3xl border border-white/5 p-10 text-center space-y-6 shadow-[0_0_50px_rgba(0,0,0,0.4)]">
-            <div className="w-16 h-16 rounded-full bg-[#17deca]/10 border border-[#17deca]/30 text-[#17deca] flex items-center justify-center mx-auto shadow-[0_0_20px_rgba(23,222,202,0.15)]">
-              <Cpu size={28} className="animate-pulse" />
-            </div>
-            
-            <div className="space-y-2">
-              <span className="text-[#17deca] font-mono text-xs uppercase tracking-widest font-bold">Syndicate Vendor Console</span>
-              <h2 className="text-2xl sm:text-3xl font-black italic tracking-tighter uppercase text-[#dab9ff]">
-                Votre Espace Vendeur
-              </h2>
-              <p className="text-sm text-[#cdc3d4]/70 max-w-md mx-auto">
-                Interface de gestion des stocks, d'ajout de bolides JDM et de suivi des enchères en cours.
-              </p>
-            </div>
-
-            {/* Avertissement de développement */}
-            <div className="bg-[#17deca]/5 border border-[#17deca]/20 rounded-xl p-5 max-w-lg mx-auto text-left font-mono text-xs space-y-2 text-[#17deca]">
-              <div className="flex items-center gap-2 font-bold uppercase tracking-wider">
-                <Shield size={14} />
-                <span>Message du Système</span>
-              </div>
-              <p className="text-[#cdc3d4]/80 leading-relaxed text-[11px]">
-                Ce module de vente crypté (ajout de voitures en base de données, validation d'offres) doit être implémenté par <strong>Nicolas</strong> lors de la prochaine étape d'intégration du backend.
-              </p>
-            </div>
-
-            <div className="pt-4 flex justify-center gap-4">
-              <button 
-                onClick={() => setProposingListing(true)}
-                className="bg-[#17deca] hover:bg-[#17deca]/95 text-[#003830] font-bold text-xs px-6 py-3.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95 shadow-[0_0_15px_rgba(23,222,202,0.3)] font-sans"
-              >
-                Vendre un bien
-              </button>
-              <button 
-                onClick={onLogout}
-                className="bg-white/5 hover:bg-white/10 text-zinc-300 font-bold text-xs px-6 py-3.5 rounded-lg uppercase tracking-wider cursor-pointer border border-white/10 transition-all active:scale-95 font-sans"
-              >
-                Déconnexion
-              </button>
-            </div>
-          </div>
-        </main>
-
-        <footer className="bg-[#0e0e0e] border-t border-white/5 py-12 text-[#cdc3d4]/40 text-xs font-mono">
-          <div className="max-w-[1440px] mx-auto px-4 md:px-16 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <p>© 2026 Mercato Nova. Tous droits réservés.</p>
-            <div className="flex items-center space-x-2 text-[10px] uppercase text-tertiary">
-              <Shield size={12} />
-              <span>Bouclier de Vente Vérifié</span>
-            </div>
-          </div>
-        </footer>
-
-        {/* Formulaire de création d'annonce pour le vendeur */}
-        {proposingListing && (
-          <div className="fixed inset-0 bg-[#0e0e0e]/85 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="glass-panel border border-[#17deca]/20 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative my-8">
-              <span className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[#17deca] animate-pulse"></span>
-              <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[#bb86fc] animate-pulse"></span>
-              
-              <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#1c1b1b]/50">
-                <div>
-                  <h3 className="text-sm font-bold font-mono uppercase tracking-widest text-[#17deca] flex items-center gap-2">
-                    <Plus size={16} />
-                    Personnaliser votre annonce
-                  </h3>
-                  <p className="text-[10px] text-[#cdc3d4]/50 font-mono mt-1">
-                    Créez votre fiche produit sur mesure pour le Mercato Nova.
-                  </p>
-                </div>
-                <button 
-                  onClick={() => setProposingListing(false)}
-                  className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-
-              <form onSubmit={handleProposeListingSubmit} className="p-6 space-y-4 max-h-[65vh] overflow-y-auto pr-2 custom-scrollbar">
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="space-y-1.5">
-                    <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Marque *</span>
-                    <select
-                      value={newProposal.brand}
-                      onChange={(e) => setNewProposal(prev => ({ ...prev, brand: e.target.value }))}
-                      className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca]"
-                    >
-                      {['Toyota', 'Nissan', 'Honda', 'Mitsubishi', 'Subaru', 'Mazda', 'Recaro', 'Nismo', 'HKS', 'Brembo'].map(b => (
-                        <option key={b} value={b} className="bg-[#121212]">{b}</option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <label className="space-y-1.5">
-                    <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Modèle *</span>
-                    <input
-                      required
-                      placeholder="Ex: RX-7 FD3S Spirit R"
-                      value={newProposal.model}
-                      onChange={(e) => setNewProposal(prev => ({ ...prev, model: e.target.value }))}
-                      className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca]"
-                    />
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="space-y-1.5">
-                    <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Année *</span>
-                    <input
-                      type="number"
-                      required
-                      min="1960"
-                      max="2027"
-                      value={newProposal.year}
-                      onChange={(e) => setNewProposal(prev => ({ ...prev, year: Number(e.target.value) }))}
-                      className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca]"
-                    />
-                  </label>
-
-                  <label className="space-y-1.5">
-                    <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Prix demandé ($) *</span>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      value={newProposal.price}
-                      onChange={(e) => setNewProposal(prev => ({ ...prev, price: Number(e.target.value) }))}
-                      className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca]"
-                    />
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="space-y-1.5">
-                    <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Kilométrage (Optionnel)</span>
-                    <input
-                      type="number"
-                      placeholder="Ex: 85000"
-                      value={newProposal.mileage || ''}
-                      onChange={(e) => setNewProposal(prev => ({ ...prev, mileage: e.target.value ? Number(e.target.value) : '' }))}
-                      className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca]"
-                    />
-                  </label>
-
-                  <label className="space-y-1.5">
-                    <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Catégorie</span>
-                    <select
-                      value={newProposal.category}
-                      onChange={(e) => setNewProposal(prev => ({ ...prev, category: e.target.value }))}
-                      className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca]"
-                    >
-                      <option value="Voitures JDM" className="bg-[#121212]">Voitures JDM</option>
-                      <option value="Pièces Performance" className="bg-[#121212]">Pièces Performance</option>
-                      <option value="Accessoires" className="bg-[#121212]">Accessoires</option>
-                    </select>
-                  </label>
-                </div>
-
-                <label className="space-y-1.5 block">
-                  <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Type de Transaction</span>
-                  <div className="grid grid-cols-3 gap-2 bg-[#121212] p-1 border border-white/5 rounded-xl font-mono text-[9px] uppercase font-bold">
-                    {[
-                      { id: 'auction', label: 'Enchère', color: 'text-[#ffb2bc] border-[#ffb2bc]' },
-                      { id: 'direct', label: 'Achat direct', color: 'text-[#17deca] border-[#17deca]' },
-                      { id: 'negotiation', label: 'Négociation', color: 'text-[#bb86fc] border-[#bb86fc]' },
-                    ].map(t => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setNewProposal(prev => ({ ...prev, saleType: t.id }))}
-                        className={`py-2 rounded-lg flex items-center justify-center cursor-pointer transition-all ${
-                          newProposal.saleType === t.id
-                            ? 'bg-[#1c1b1b] border border-white/10 text-white font-black shadow-[0_0_10px_rgba(23,222,202,0.1)]'
-                            : 'text-[#cdc3d4]/50 hover:text-white'
-                        }`}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </label>
-
-                <div className="space-y-2">
-                  <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider block">Illustration de l'annonce</span>
-                  <div className="grid grid-cols-4 gap-2">
-                    {[
-                      { label: 'Supra RZ', url: 'https://images.unsplash.com/photo-1616422285623-13ff0162193c?auto=format&fit=crop&w=800&q=80' },
-                      { label: 'Civic EK9', url: 'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&w=800&q=80' },
-                      { label: 'Lancer Evo', url: 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?auto=format&fit=crop&w=800&q=80' },
-                      { label: 'Pièces JDM', url: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=800&q=80' },
-                    ].map((img, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setNewProposal(prev => ({ ...prev, image: img.url }))}
-                        className={`relative rounded-lg overflow-hidden border transition-all h-14 ${
-                          newProposal.image === img.url ? 'border-[#17deca] ring-2 ring-[#17deca]/20 scale-95' : 'border-white/10 hover:border-white/30'
-                        }`}
-                      >
-                        <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-[#0e0e0e]/40 flex items-center justify-center">
-                          <span className="text-[8px] font-mono font-bold text-white uppercase tracking-wider">{img.label}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  <label className="space-y-1 block mt-2">
-                    <span className="text-[8px] font-mono text-[#cdc3d4]/40 uppercase block">Ou lien de votre propre image :</span>
-                    <input
-                      placeholder="https://..."
-                      value={newProposal.image}
-                      onChange={(e) => setNewProposal(prev => ({ ...prev, image: e.target.value }))}
-                      className="w-full bg-[#1c1b1b]/50 border border-white/5 rounded-lg px-3 py-1.5 text-[10px] font-mono text-[#cdc3d4] focus:outline-none focus:border-[#17deca]"
-                    />
-                  </label>
-                </div>
-
-                <label className="space-y-1.5 block">
-                  <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-wider">Description de l'objet / Remarques</span>
-                  <textarea
-                    rows="3"
-                    placeholder="Expliquez l'état général de votre voiture ou de votre pièce (ex: historique, modifications, entretien...)"
-                    value={newProposal.description}
-                    onChange={(e) => setNewProposal(prev => ({ ...prev, description: e.target.value }))}
-                    className="w-full bg-[#1c1b1b] border border-white/10 rounded-lg px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-[#17deca] resize-none"
-                  />
-                </label>
-
-                <div className="pt-4 border-t border-white/5 flex justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setProposingListing(false)}
-                    className="border border-white/10 hover:bg-white/5 text-[#cdc3d4] rounded-lg px-4 py-2 text-xs font-mono font-bold uppercase tracking-wider cursor-pointer active:scale-95"
-                  >
-                    Annuler
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-[#17deca] hover:bg-[#17deca]/90 text-[#003830] rounded-lg px-5 py-2 text-xs font-mono font-bold uppercase tracking-wider shadow-[0_0_12px_rgba(23,222,202,0.3)] cursor-pointer active:scale-95"
-                  >
-                    Soumettre l'annonce
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-      </div>
-    );
+    return <SellerDashboard user={user} onLogout={onLogout} />;
   }
 
   return (
@@ -1095,7 +791,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
               Enchères
             </button>
             <button 
-              onClick={() => alert("Espace Préparations bientôt disponible (Gabin / Préparations)")}
+              onClick={() => setPopup({ title: "Préparations", message: "Espace Préparations bientôt disponible (Gabin / Préparations).", type: "info" })}
               className="text-[#cdc3d4] hover:text-[#e5e2e1] pb-1 cursor-pointer transition-colors bg-transparent border-none font-semibold text-sm"
             >
               Préparations
@@ -1200,7 +896,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
                         {messages.map(m => (
                           <div 
                             key={m.id} 
-                            onClick={() => { setShowMessagesMenu(false); alert(`Discussion ouverte avec ${m.sender} (simulation)`); }} 
+                            onClick={() => { setShowMessagesMenu(false); setPopup({ title: "Simulation Messagerie", message: `Discussion ouverte avec ${m.sender} (simulation). Une fois le backend connecté par Nicolas, cela ouvrira un chat temps réel.`, type: "info" }); }} 
                             className="px-4 py-3 hover:bg-white/5 transition-all flex items-start gap-3 cursor-pointer"
                           >
                             <div className="relative flex-shrink-0">
@@ -1306,7 +1002,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
                                 requestAuthentication("Connexion requise : Vous devez être connecté pour accéder au tunnel de paiement sécurisé.");
                                 return;
                               }
-                              alert("Panier validé ! Célestin mettra bientôt en place le tunnel de paiement de l'entiercement."); 
+                              setPopup({ title: "Commande Validée", message: "Panier validé ! Célestin mettra bientôt en place le tunnel de paiement de l'entiercement.", type: "info" });
                             }}
                             className="w-full bg-[#bb86fc] hover:bg-[#bb86fc]/80 text-[#460283] font-bold text-[10px] font-mono py-2.5 rounded uppercase tracking-wider text-center cursor-pointer transition-colors block"
                           >
@@ -1379,7 +1075,11 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
                             requestAuthentication("Connexion requise : Cet espace requiert une clé d'accès.");
                             return;
                           }
-                          alert("Ouverture de l'espace Mon compte (Célestin / Profil)"); 
+                          setPopup({
+                            title: "Mon Compte",
+                            message: "Ouverture de l'espace Mon compte (Célestin / Profil) - Bientôt disponible.",
+                            type: "info"
+                          });
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-[#cdc3d4] hover:text-primary hover:bg-primary/5 transition-all text-left cursor-pointer"
                       >
@@ -1394,7 +1094,11 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
                             requestAuthentication("Connexion requise : Cet espace requiert une clé d'accès.");
                             return;
                           }
-                          alert("Ouverture de l'espace Mes achats (Gabin / Historique)"); 
+                          setPopup({
+                            title: "Mes Achats",
+                            message: "Ouverture de l'espace Mes achats (Gabin / Historique) - Bientôt disponible.",
+                            type: "info"
+                          });
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-[#cdc3d4] hover:text-secondary hover:bg-secondary/5 transition-all text-left cursor-pointer"
                       >
@@ -1405,7 +1109,14 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
                       {/* Cacher l'espace vendeur pour les clients de type buyer ou anonymes */}
                       {user && user.role !== 'buyer' && (
                         <button 
-                          onClick={() => { setShowProfileMenu(false); alert("La page espace vendeur doit être implémentée par Nicolas."); }}
+                          onClick={() => { 
+                            setShowProfileMenu(false); 
+                            setPopup({
+                              title: "Espace Vendeur",
+                              message: "La page espace vendeur doit être implémentée par Nicolas.",
+                              type: "info"
+                            });
+                          }}
                           className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-[#cdc3d4] hover:text-[#17deca] hover:bg-[#17deca]/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1 pt-1.5"
                         >
                           <Cpu size={14} className="text-[#17deca]" />
@@ -1467,29 +1178,35 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
               </button>
             </div>
           )}
-          {user && (user.role === 'seller' || user.role === 'utilisateur' || user.role === 'admin' || user.role === 'directeur') && (
-            <div className="glass-panel rounded-2xl p-5 border border-tertiary/20">
-              <div className="flex items-center gap-2 text-tertiary mb-3">
-                <Plus size={18} />
-                <h3 className="font-bold text-sm uppercase tracking-wider">Vendre un bien</h3>
-              </div>
-              <p className="text-[11px] text-[#cdc3d4]/70 font-mono mb-4">
-                Toute nouvelle annonce passe en attente jusqu'a validation admin.
-              </p>
-              <button
-                onClick={() => {
-                  if (!isAuthenticated) {
-                    requestAuthentication("Vous devez etre connecte pour proposer une annonce au catalogue.");
-                    return;
-                  }
-                  setProposingListing(true);
-                }}
-                className="w-full border border-tertiary/40 text-tertiary rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider hover:bg-tertiary/10"
-              >
-                Proposer une annonce
-              </button>
+          <div className="glass-panel rounded-2xl p-5 border border-tertiary/20">
+            <div className="flex items-center gap-2 text-tertiary mb-3">
+              <Plus size={18} />
+              <h3 className="font-bold text-sm uppercase tracking-wider">Vendre un bien</h3>
             </div>
-          )}
+            <p className="text-[11px] text-[#cdc3d4]/70 font-mono mb-4">
+              Toute nouvelle annonce passe en attente jusqu'a validation admin.
+            </p>
+            <button
+              onClick={() => {
+                if (!isAuthenticated) {
+                  requestAuthentication("Vous devez être connecté pour proposer une annonce au catalogue.");
+                  return;
+                }
+                if (user?.role === 'utilisateur' || user?.role === 'buyer') {
+                  setPopup({
+                    title: "Devenir Vendeur",
+                    message: "Pour proposer un bolide ou une pièce sur Mercato Nova, vous devez posséder un statut Vendeur validé. Vous pouvez vous reconnecter en choisissant le rôle Vendeur (ex: Kenji Sato / seller@mercatonova.com) pour tester ce flux.",
+                    type: "info"
+                  });
+                  return;
+                }
+                setProposingListing(true);
+              }}
+              className="w-full border border-tertiary/40 text-tertiary rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider hover:bg-tertiary/10"
+            >
+              {isAuthenticated && (user?.role === 'utilisateur' || user?.role === 'buyer') ? "Devenir Vendeur" : "Proposer une annonce"}
+            </button>
+          </div>
           <div className="glass-panel rounded-2xl p-6 border border-white/5">
             <div className="flex items-center space-x-2.5 mb-6">
               <SlidersHorizontal className="text-[#bb86fc]" size={18} />
@@ -1811,7 +1528,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
                               <span>Entiercement Vérifié</span>
                             </div>
                             <button
-                              onClick={() => alert(`Négociation ouverte pour la ${product.model}. Une fois le backend connecté par Nicolas, cette action enverra une offre en base.`)}
+                              onClick={() => setPopup({ title: "Négociation", message: `Négociation ouverte pour la ${product.model}. Une fois le backend connecté par Nicolas, cette action enverra une offre en base.`, type: "info" })}
                               className="bg-white/10 hover:bg-[#ffb2bc]/15 border border-white/10 hover:border-[#ffb2bc]/30 text-[#e5e2e1] text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95"
                             >
                               Négocier le Prix
@@ -1840,7 +1557,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
           {filteredProducts.length > 0 && (
             <div className="flex justify-center pt-8">
               <button
-                onClick={() => alert("Inventaire complet chargé. Gabin ajoutera la pagination lors de l'intégration finale avec Célestin.")}
+                onClick={() => setPopup({ title: "Inventaire Chargé", message: "Inventaire complet chargé. Gabin ajoutera la pagination lors de l'intégration finale avec Célestin.", type: "info" })}
                 className="neon-border-btn text-xs font-bold px-8 py-3 rounded-full uppercase tracking-widest text-[#e5e2e1] hover:text-[#bb86fc] cursor-pointer active:scale-95"
               >
                 Charger plus de Véhicules
@@ -2181,7 +1898,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
               requestAuthentication("Connexion requise : Vous devez être connecté pour accéder à la messagerie.");
               return;
             }
-            alert("Messagerie (Paul/Nicolas) - Bientôt en ligne");
+            setPopup({ title: "Messagerie", message: "Messagerie (Paul/Nicolas) - Bientôt en ligne.", type: "info" });
           }}
           className="flex flex-col items-center justify-center text-[#cdc3d4] hover:text-[#bb86fc] active:scale-105 transition-transform relative"
         >
@@ -2225,6 +1942,67 @@ function Home({ user, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
           </div>
         </div>
       </footer>
+
+      {/* Custom Alert/Info Popup */}
+      {popup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className={`glass-panel w-full max-w-md rounded-2xl border p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200 relative ${popup.type === 'warning' ? 'border-[#ffb2bc]/30 shadow-[0_0_50px_rgba(255,178,188,0.2)]' : 'border-[#bb86fc]/30 shadow-[0_0_50px_rgba(187,134,252,0.2)]'}`}>
+            <span className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[#bb86fc] animate-pulse"></span>
+            <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[#ffb2bc] animate-pulse"></span>
+            
+            <div className="text-center space-y-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto border shadow-[0_0_15px_rgba(255,255,255,0.05)] ${popup.type === 'warning' ? 'bg-[#ffb2bc]/10 text-[#ffb2bc] border-[#ffb2bc]/20 shadow-[0_0_15px_rgba(255,178,188,0.2)]' : 'bg-[#bb86fc]/10 text-[#bb86fc] border-[#bb86fc]/20 shadow-[0_0_15px_rgba(187,134,252,0.2)]'}`}>
+                {popup.type === 'warning' ? <AlertTriangle size={24} /> : <Sparkles size={24} />}
+              </div>
+              <h3 className="text-lg font-black italic tracking-tighter uppercase text-white font-headline-md">{popup.title}</h3>
+              <p className="text-xs text-[#cdc3d4]/80 font-mono leading-relaxed">{popup.message}</p>
+              
+              <button 
+                onClick={() => {
+                  setPopup(null);
+                  if (popup.onClose) popup.onClose();
+                }}
+                className={`w-full mt-6 py-3 font-bold text-xs uppercase tracking-wider rounded-lg transition-all ${popup.type === 'warning' ? 'bg-[#ffb2bc] hover:brightness-110 text-[#400013]' : 'bg-[#bb86fc] hover:bg-[#bb86fc]/90 text-[#460283]'}`}
+              >
+                Compris
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirm Dialog */}
+      {confirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="glass-panel w-full max-w-md rounded-2xl border border-[#ffb2bc]/30 p-8 shadow-[0_0_50px_rgba(255,178,188,0.25)] animate-in fade-in zoom-in-95 duration-200 relative">
+            <span className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[#bb86fc] animate-pulse"></span>
+            <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[#ffb2bc] animate-pulse"></span>
+            
+            <div className="text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-[#ffb2bc]/10 flex items-center justify-center mx-auto text-[#ffb2bc] border border-[#ffb2bc]/20 shadow-[0_0_15px_rgba(255,178,188,0.2)]">
+                <AlertTriangle size={24} />
+              </div>
+              <h3 className="text-lg font-black italic tracking-tighter uppercase text-white font-headline-md">{confirmDialog.title}</h3>
+              <p className="text-xs text-zinc-300 font-mono leading-relaxed">{confirmDialog.message}</p>
+              
+              <div className="flex gap-4 mt-6">
+                <button 
+                  onClick={() => setConfirmDialog(null)}
+                  className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-zinc-300 rounded-lg border border-white/10 font-bold text-xs uppercase tracking-wider transition-colors"
+                >
+                  Annuler
+                </button>
+                <button 
+                  onClick={confirmDialog.onConfirm}
+                  className="flex-1 py-3 bg-gradient-to-r from-[#bb86fc] to-[#ffb2bc] text-[#460283] hover:brightness-110 font-black text-xs uppercase tracking-wider rounded-lg transition-all"
+                >
+                  Confirmer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
