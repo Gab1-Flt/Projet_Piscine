@@ -19,7 +19,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   
   // Navigation réactive entre catalogue, liste des enchères, et enchère live
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'auctions_list', 'auction'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'auctions_list', 'auction', 'login'
   const [activeAuctionProduct, setActiveAuctionProduct] = useState(null);
 
   // Charger la session persistante au démarrage
@@ -89,22 +89,38 @@ function App() {
     );
   }
 
+  // Protection des pages importantes (Enchères en cours, Enchère Live, etc.)
+  const activeView = (!isLoggedIn && currentView !== 'home' && currentView !== 'login') ? 'login' : currentView;
+
   return (
     <>
-      {!isLoggedIn ? (
-        <Login onLogin={handleLogin} />
-      ) : currentView === 'home' ? (
+      {activeView === 'login' ? (
+        <Login onLogin={handleLogin} onBack={() => setCurrentView('home')} />
+      ) : activeView === 'home' ? (
         <Home 
-          user={user} 
+          user={isLoggedIn ? user : null} 
           onLogout={handleLogout} 
+          onLoginRequest={() => setCurrentView('login')}
           onSelectAuction={(product) => {
+            if (!isLoggedIn) {
+              alert("Connexion requise : Vous devez vous connecter pour participer à une enchère ou faire une offre.");
+              setCurrentView('login');
+              return;
+            }
             console.log("App: Navigating to auction view for:", product);
             setActiveAuctionProduct(product);
             setCurrentView('auction');
           }}
-          onNavigate={(view) => setCurrentView(view)}
+          onNavigate={(view) => {
+            if (!isLoggedIn && view !== 'home') {
+              alert("Connexion requise : Cet espace sécurisé requiert une clé d'accès.");
+              setCurrentView('login');
+              return;
+            }
+            setCurrentView(view);
+          }}
         />
-      ) : currentView === 'auctions_list' ? (
+      ) : activeView === 'auctions_list' ? (
         <AuctionsList
           user={user}
           onLogout={handleLogout}

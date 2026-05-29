@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, ArrowRight, Zap, Shield, User, Sparkles, Eye, EyeOff, Cpu } from 'lucide-react';
 
-function Login({ onLogin }) {
+function Login({ onLogin, onBack }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [role, setRole] = useState('buyer'); // 'buyer', 'seller' ou 'admin'
   const [email, setEmail] = useState('buyer@mercatonova.com');
@@ -51,7 +51,7 @@ function Login({ onLogin }) {
       <div className="absolute bottom-[20%] right-[20%] w-[500px] h-[500px] rounded-full bg-secondary/5 blur-[120px] pointer-events-none z-0"></div>
 
       {/* Spacing Header */}
-      <header className="relative w-full max-w-7xl mx-auto px-6 py-8 flex justify-center md:justify-start z-10">
+      <header className="relative w-full max-w-7xl mx-auto px-6 py-8 flex justify-between items-center z-10">
         <div className="flex items-center space-x-2.5">
           <div className="w-9 h-9 rounded bg-[#bb86fc] flex items-center justify-center font-black tracking-tighter text-[#460283] italic text-lg shadow-[0_0_12px_rgba(187,134,252,0.4)]">
             MN
@@ -61,6 +61,15 @@ function Login({ onLogin }) {
             <p className="text-[9px] text-[#cdc3d4]/50 font-mono tracking-widest -mt-1 uppercase">Tokyo Underground</p>
           </div>
         </div>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider font-mono cursor-pointer transition-all bg-white/5 border border-white/10 hover:border-[#bb86fc] rounded-lg text-white hover:bg-white/10 active:scale-95"
+          >
+            Retour au Catalogue
+          </button>
+        )}
       </header>
 
       {/* Main Login Form Container */}

@@ -50,7 +50,7 @@ export const mockUsers = [
     email: 'seller@mercatonova.com',
     password: 'nova1234',
     phone: '+33 7 18 21 54 77',
-    role: 'utilisateur',
+    role: 'seller',
     status: 'active',
     city: 'Lyon',
     createdAt: '2026-05-04',
