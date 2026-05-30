@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Compass, Timer, MessageSquare, ShoppingCart, User, Bell, Heart, LogOut,
-  Shield, Cpu, Grid, List, Search, ArrowRight, Gavel, X, Check, Landmark, Zap
+  Shield, Cpu, Grid, List, Search, ArrowRight, Gavel, X, Check, Landmark, Zap, Sparkles, AlertTriangle
 } from 'lucide-react';
 
 function AuctionsList({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSelectAuction, onNavigate }) {
@@ -64,6 +64,8 @@ function AuctionsList({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout
     { id: 1, sender: "Takumi Fujiwara", snippet: "Le turbo HKS est encore dispo ?", time: "18:42", online: true },
     { id: 2, sender: "Keiichi Tsuchiya", snippet: "Je pose une offre sur ta R34.", time: "15:20", online: false }
   ]);
+
+  const [popup, setPopup] = useState(null); // { title: string, message: string, type: string }
 
   // Compte à rebours animé pour l'affichage esthétique
   const [ticks, setTicks] = useState(0);
@@ -414,7 +416,7 @@ function AuctionsList({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout
           <span className="text-[9px] font-bold uppercase tracking-wider font-mono">Enchères</span>
         </button>
         <button
-          onClick={() => alert("Messagerie (Paul/Nicolas) - Bientôt en ligne")}
+          onClick={() => setPopup({ title: "Messagerie", message: "Messagerie (Paul/Nicolas) - Bientôt en ligne.", type: "info" })}
           className="flex flex-col items-center justify-center text-[#cdc3d4] hover:text-[#bb86fc] active:scale-105 transition-transform relative"
         >
           <MessageSquare size={18} className="mb-0.5" />
@@ -440,6 +442,34 @@ function AuctionsList({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout
           </div>
         </div>
       </footer>
+
+      {/* Custom Alert/Info Popup */}
+      {popup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className={`glass-panel w-full max-w-md rounded-2xl border p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200 relative ${popup.type === 'warning' ? 'border-[#ffb2bc]/30 shadow-[0_0_50px_rgba(255,178,188,0.2)]' : 'border-[#bb86fc]/30 shadow-[0_0_50px_rgba(187,134,252,0.2)]'}`}>
+            <span className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[#bb86fc] animate-pulse"></span>
+            <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[#ffb2bc] animate-pulse"></span>
+            
+            <div className="text-center space-y-4">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto border shadow-[0_0_15px_rgba(255,255,255,0.05)] ${popup.type === 'warning' ? 'bg-[#ffb2bc]/10 text-[#ffb2bc] border-[#ffb2bc]/20 shadow-[0_0_15px_rgba(255,178,188,0.2)]' : 'bg-[#bb86fc]/10 text-[#bb86fc] border-[#bb86fc]/20 shadow-[0_0_15px_rgba(187,134,252,0.2)]'}`}>
+                {popup.type === 'warning' ? <AlertTriangle size={24} /> : <Sparkles size={24} />}
+              </div>
+              <h3 className="text-lg font-black italic tracking-tighter uppercase text-white font-headline-md">{popup.title}</h3>
+              <p className="text-xs text-[#cdc3d4]/80 font-mono leading-relaxed">{popup.message}</p>
+              
+              <button 
+                onClick={() => {
+                  setPopup(null);
+                  if (popup.onClose) popup.onClose();
+                }}
+                className={`w-full mt-6 py-3 font-bold text-xs uppercase tracking-wider rounded-lg transition-all ${popup.type === 'warning' ? 'bg-[#ffb2bc] hover:brightness-110 text-[#400013]' : 'bg-[#bb86fc] hover:bg-[#bb86fc]/90 text-[#460283]'}`}
+              >
+                Compris
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
