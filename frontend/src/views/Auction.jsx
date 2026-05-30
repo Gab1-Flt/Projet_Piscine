@@ -4,7 +4,7 @@ import {
   MessageSquare, User, Award, TrendingUp, Coins, Gavel, RotateCcw
 } from 'lucide-react';
 
-function Auction({ user, product, onBack, onLogout }) {
+function Auction({ user, product, onBack, onLogout, onNavigate }) {
   // Produit de repli si aucun n'est passé en prop
   const currentProduct = product || {
     id: 1,
@@ -129,7 +129,7 @@ function Auction({ user, product, onBack, onLogout }) {
       setOpponentNotification({
         pilot: pilot.name,
         amount: newPrice,
-        text: `Le pilote underground ${pilot.name} vient de réenchérir à $${newPrice.toLocaleString()} !`
+        text: `Le pilote underground ${pilot.name} vient de réenchérir à ${newPrice.toLocaleString()} € !`
       });
 
       // Cacher la notification après 3.5 secondes
@@ -147,7 +147,7 @@ function Auction({ user, product, onBack, onLogout }) {
     e.preventDefault();
     const bidAmount = parseInt(bidAmountInput);
     if (isNaN(bidAmount) || bidAmount <= currentPrice) {
-      alert(`Votre offre doit être strictement supérieure à l'offre actuelle ($${currentPrice.toLocaleString()})`);
+      alert(`Votre offre doit être strictement supérieure à l'offre actuelle (${currentPrice.toLocaleString()} €)`);
       return;
     }
 
@@ -360,7 +360,7 @@ function Auction({ user, product, onBack, onLogout }) {
               <div>
                 <span className="text-[10px] font-mono text-[#cdc3d4]/40 uppercase tracking-widest block">Offre Actuelle</span>
                 <span className="font-black text-3xl tracking-tight text-[#17deca] font-mono block mt-1 drop-shadow-[0_0_10px_rgba(23,222,202,0.25)]">
-                  ${currentPrice.toLocaleString()}
+                  {currentPrice.toLocaleString()} €
                 </span>
               </div>
               <div className="text-right bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5">
@@ -377,10 +377,10 @@ function Auction({ user, product, onBack, onLogout }) {
             <form onSubmit={handleUserBidSubmit} className="space-y-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-[#cdc3d4]/50 font-mono block">
-                  Saisir le montant de votre offre (USD)
+                  Saisir le montant de votre offre (EUR)
                 </label>
                 <div className="relative rounded-xl border border-white/15 input-glow bg-[#1c1b1b] focus-within:border-primary transition-all">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono font-bold text-base text-[#cdc3d4]/30">$</span>
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono font-bold text-base text-[#cdc3d4]/30">€</span>
                   <input
                     required
                     type="number"
@@ -397,20 +397,20 @@ function Auction({ user, product, onBack, onLogout }) {
                       onClick={() => setBidAmountInput((currentPrice + 1000).toString())}
                       className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-[9px] font-mono font-bold text-zinc-300 hover:text-white hover:bg-white/10 cursor-pointer transition-all"
                     >
-                      +$1K
+                      +1k €
                     </button>
                     <button
                       type="button"
                       onClick={() => setBidAmountInput((currentPrice + 5000).toString())}
                       className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-[9px] font-mono font-bold text-zinc-300 hover:text-white hover:bg-white/10 cursor-pointer transition-all"
                     >
-                      +$5K
+                      +5k €
                     </button>
                   </div>
                 </div>
                 <div className="flex justify-between text-[9px] font-mono text-zinc-500">
-                  <span>Pas d'incrément minimum : $1</span>
-                  <span>Offre minimale : ${(currentPrice + 1).toLocaleString()}</span>
+                  <span>Pas d'incrément minimum : 1 €</span>
+                  <span>Offre minimale : {(currentPrice + 1).toLocaleString()} €</span>
                 </div>
               </div>
 
@@ -570,7 +570,7 @@ function Auction({ user, product, onBack, onLogout }) {
                   <span>Châssis : {currentProduct.chassis}</span>
                 </div>
                 <p className="text-xs font-mono text-[#17deca] font-bold mt-1">
-                  Prix d'adjudication final : ${currentPrice.toLocaleString()}
+                  Prix d'adjudication final : {currentPrice.toLocaleString()} €
                 </p>
               </div>
             </div>
@@ -582,7 +582,7 @@ function Auction({ user, product, onBack, onLogout }) {
                 <span>Instructions de Paiement par Entiercement (Nova Guard)</span>
               </div>
               <p className="text-[#cdc3d4]/85 leading-relaxed text-[11px]">
-                Votre transaction de <strong>${currentPrice.toLocaleString()}</strong> a été bloquée de manière sécurisée sur le compte tiers de Mercato Nova. 
+                Votre transaction de <strong>{currentPrice.toLocaleString()} €</strong> a été bloquée de manière sécurisée sur le compte tiers de Mercato Nova. 
                 Le vendeur dispose de <strong>48 heures</strong> pour organiser le transport sécurisé depuis le port de Yokohama. 
                 Les clés et documents d'importation vous seront remis après inspection physique du bolide.
               </p>
@@ -590,16 +590,24 @@ function Auction({ user, product, onBack, onLogout }) {
 
             <div className="pt-4 flex flex-col sm:flex-row justify-center gap-4">
               <button 
-                onClick={onBack}
+                onClick={() => onNavigate('checkout', {
+                  type: 'auction',
+                  items: [{
+                    name: `Enchère gagnée : ${currentProduct.brand} ${currentProduct.model}`,
+                    price: currentPrice,
+                    image: currentProduct.image,
+                    qty: 1
+                  }]
+                })}
                 className="bg-[#bb86fc] hover:bg-[#bb86fc]/90 text-[#460283] font-bold text-xs px-8 py-4 rounded-xl uppercase tracking-wider cursor-pointer transition-all active:scale-95 shadow-[0_0_20px_rgba(187,134,252,0.3)] font-sans"
               >
-                Retourner au Catalogue
+                Procéder au Paiement
               </button>
               <button 
-                onClick={() => alert(`Reçu généré avec succès pour l'achat de la ${currentProduct.model} pour $${currentPrice.toLocaleString()}.`)}
+                onClick={onBack}
                 className="bg-white/5 hover:bg-white/10 text-zinc-300 font-bold text-xs px-6 py-4 rounded-xl uppercase tracking-wider cursor-pointer border border-white/10 transition-all active:scale-95 font-sans"
               >
-                Imprimer le Reçu
+                Quitter l'Enchère
               </button>
             </div>
 
@@ -630,7 +638,7 @@ function Auction({ user, product, onBack, onLogout }) {
             </div>
 
             <div className="bg-[#1c1b1b]/80 border border-white/5 rounded-2xl p-4 text-sm font-mono text-[#cdc3d4] leading-relaxed">
-              Le pilote underground <strong className="text-secondary font-bold uppercase">{highestBidder}</strong> a emporté le bolide pour un montant final de <strong className="text-[#17deca] font-bold">${currentPrice.toLocaleString()}</strong>.
+              Le pilote underground <strong className="text-secondary font-bold uppercase">{highestBidder}</strong> a emporté le bolide pour un montant final de <strong className="text-[#17deca] font-bold">{currentPrice.toLocaleString()} €</strong>.
             </div>
 
             <div className="pt-4 flex justify-center gap-4">

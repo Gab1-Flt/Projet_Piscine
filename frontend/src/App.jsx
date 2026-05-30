@@ -3,15 +3,46 @@ import Login from './views/Login';
 import Home from './views/Home';
 import AuctionsList from './views/AuctionsList';
 import Auction from './views/Auction';
+import Preparation from './views/Preparation';
+import Checkout from './views/Checkout';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   
-  // Navigation réactive entre catalogue, liste des enchères, et enchère live
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'auctions_list', 'auction'
+  // Navigation réactive entre catalogue, liste des enchères, préparation, et paiement
+  const [currentView, setCurrentView] = useState('home'); 
   const [activeAuctionProduct, setActiveAuctionProduct] = useState(null);
+
+  // État du panier d'achat synchronisé globalement
+  const [cartItems, setCartItems] = useState([]);
+
+  // Données de transaction au moment de passer à la caisse
+  const [checkoutData, setCheckoutData] = useState(null);
+
+  // Gestion du panier global
+  const handleAddToCart = (product) => {
+    if (!cartItems.some(item => item.id === product.id)) {
+      setCartItems(prev => [...prev, product]);
+    }
+  };
+
+  const handleRemoveFromCart = (productId) => {
+    setCartItems(prev => prev.filter(item => item.id !== productId));
+  };
+
+  const handleClearCart = () => {
+    setCartItems([]);
+  };
+
+  // Gestionnaire de navigation enrichi avec passage de paramètres
+  const handleNavigate = (view, data = null) => {
+    if (data) {
+      setCheckoutData(data);
+    }
+    setCurrentView(view);
+  };
 
   // Charger la session persistante au démarrage
   useEffect(() => {
@@ -51,6 +82,8 @@ function App() {
     setUser(null);
     setCurrentView('home');
     setActiveAuctionProduct(null);
+    setCartItems([]);
+    setCheckoutData(null);
     try {
       localStorage.removeItem('mn_session_active');
       localStorage.removeItem('mn_session_email');
@@ -78,31 +111,50 @@ function App() {
       ) : currentView === 'home' ? (
         <Home 
           user={user} 
+          cartItems={cartItems}
+          onAddToCart={handleAddToCart}
+          onRemoveFromCart={handleRemoveFromCart}
           onLogout={handleLogout} 
           onSelectAuction={(product) => {
             console.log("App: Navigating to auction view for:", product);
             setActiveAuctionProduct(product);
             setCurrentView('auction');
           }}
-          onNavigate={(view) => setCurrentView(view)}
+          onNavigate={handleNavigate}
         />
       ) : currentView === 'auctions_list' ? (
         <AuctionsList
           user={user}
+          cartItems={cartItems}
+          onAddToCart={handleAddToCart}
+          onRemoveFromCart={handleRemoveFromCart}
           onLogout={handleLogout}
           onSelectAuction={(product) => {
             console.log("App: Navigating to auction view for:", product);
             setActiveAuctionProduct(product);
             setCurrentView('auction');
           }}
-          onNavigate={(view) => setCurrentView(view)}
+          onNavigate={handleNavigate}
+        />
+      ) : currentView === 'preparation' ? (
+        <Preparation
+          user={user}
+          onLogout={handleLogout}
+          onNavigate={handleNavigate}
+        />
+      ) : currentView === 'checkout' ? (
+        <Checkout
+          checkoutData={checkoutData}
+          onClearCart={handleClearCart}
+          onNavigate={handleNavigate}
         />
       ) : (
         <Auction 
           user={user} 
           product={activeAuctionProduct} 
-          onBack={() => setCurrentView('auctions_list')} 
+          onBack={() => handleNavigate('auctions_list')} 
           onLogout={handleLogout}
+          onNavigate={handleNavigate}
         />
       )}
     </>

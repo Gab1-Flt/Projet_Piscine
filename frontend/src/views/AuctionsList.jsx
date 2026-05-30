@@ -4,7 +4,7 @@ import {
   Shield, Cpu, Grid, List, Search, ArrowRight, Gavel, X, Check, Landmark, Zap
 } from 'lucide-react';
 
-function AuctionsList({ user, onLogout, onSelectAuction, onNavigate }) {
+function AuctionsList({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSelectAuction, onNavigate }) {
   // Liste des véhicules aux enchères uniquement
   const initialAuctions = [
     {
@@ -47,8 +47,7 @@ function AuctionsList({ user, onLogout, onSelectAuction, onNavigate }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   
-  // États de Panier, Favoris & Menus déroulants (pour garder le Header fonctionnel)
-  const [cartItems, setCartItems] = useState([]);
+  // États de Panier, Favoris & Menus déroulants (pour garder le Header fonctionnel, consommés par les props)
   const [favorites, setFavorites] = useState([1]);
   const [showCartMenu, setShowCartMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -135,7 +134,7 @@ function AuctionsList({ user, onLogout, onSelectAuction, onNavigate }) {
               Enchères
             </button>
             <button 
-              onClick={() => alert("Espace Préparations bientôt disponible (Gabin / Préparations)")}
+              onClick={() => onNavigate('preparation')}
               className="text-[#cdc3d4] hover:text-[#e5e2e1] pb-1 cursor-pointer transition-colors bg-transparent border-none font-semibold text-sm"
             >
               Préparations
@@ -350,7 +349,7 @@ function AuctionsList({ user, onLogout, onSelectAuction, onNavigate }) {
                     <div className="text-right">
                       <span className="text-[9px] text-[#cdc3d4]/30 font-mono block">OFFRE DU SYNDICAT</span>
                       <span className="font-extrabold text-[#17deca] text-lg font-mono tracking-tight block">
-                        ${product.price.toLocaleString()}
+                        {product.price.toLocaleString()} €
                       </span>
                     </div>
                   </div>

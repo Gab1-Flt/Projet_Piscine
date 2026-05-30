@@ -5,7 +5,7 @@ import {
   Check, X, Zap, Cpu, Compass, Landmark, Heart, LogOut
 } from 'lucide-react';
 
-function Home({ user, onLogout, onSelectAuction, onNavigate }) {
+function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSelectAuction, onNavigate }) {
   // Jeu de données des produits traduit en français, en lien avec init.sql
   const initialProducts = [
     {
@@ -114,8 +114,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false); // Filtre favoris uniquement
   const [salesFilter, setSalesFilter] = useState('all'); // 'all', 'auction', 'negotiation', 'direct'
   
-  // États de Panier Premium
-  const [cartItems, setCartItems] = useState([]);
+  // États de Panier Premium (consommés par les props)
   const [showCartMenu, setShowCartMenu] = useState(false);
 
   // États de Profil & Menus Déroulants opaques (pour éviter les overlapping bizarres)
@@ -214,11 +213,11 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
 
 
   const handleAddToCart = (product) => {
-    setCartItems(prev => [...prev, product]);
+    onAddToCart(product);
   };
 
   const handleRemoveFromCart = (productId) => {
-    setCartItems(prev => prev.filter(item => item.id !== productId));
+    onRemoveFromCart(productId);
   };
 
   // Action administrative : supprimer un produit de la liste locale
@@ -411,7 +410,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
               Enchères
             </button>
             <button 
-              onClick={() => alert("Espace Préparations bientôt disponible (Gabin / Préparations)")}
+              onClick={() => onNavigate('preparation')}
               className="text-[#cdc3d4] hover:text-[#e5e2e1] pb-1 cursor-pointer transition-colors bg-transparent border-none font-semibold text-sm"
             >
               Préparations
@@ -594,7 +593,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
                                 <img src={item.image} alt={item.model} className="w-10 h-8 object-cover rounded border border-white/10 flex-shrink-0" />
                                 <div className="min-w-0">
                                   <h4 className="text-xs font-bold text-zinc-200 truncate">{item.model}</h4>
-                                  <span className="text-[10px] font-mono text-[#bb86fc]">${item.price.toLocaleString()}</span>
+                                  <span className="text-[10px] font-mono text-[#bb86fc]">{item.price.toLocaleString()} €</span>
                                 </div>
                               </div>
                               <button 
@@ -613,13 +612,19 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
                         <div className="px-4 pt-3 border-t border-white/5 mt-2 space-y-2.5">
                           <div className="flex justify-between text-xs font-mono">
                             <span className="text-zinc-400">Total :</span>
-                            <span className="font-bold text-[#17deca]">${cartItems.reduce((acc, item) => acc + item.price, 0).toLocaleString()}</span>
+                            <span className="font-bold text-[#17deca]">{cartItems.reduce((acc, item) => acc + item.price, 0).toLocaleString()} €</span>
                           </div>
                           <button 
-                            onClick={() => { setShowCartMenu(false); alert("Panier validé ! Célestin mettra bientôt en place le tunnel de paiement de l'entiercement."); }}
+                            onClick={() => { 
+                              setShowCartMenu(false); 
+                              onNavigate('checkout', { 
+                                type: 'cart', 
+                                items: cartItems.map(item => ({ name: `${item.brand} ${item.model}`, price: item.price, image: item.image, qty: 1 }))
+                              }); 
+                            }}
                             className="w-full bg-[#bb86fc] hover:bg-[#bb86fc]/80 text-[#460283] font-bold text-[10px] font-mono py-2.5 rounded uppercase tracking-wider text-center cursor-pointer transition-colors block"
                           >
-                            Valider la commande
+                            Passer au paiement
                           </button>
                         </div>
                       )}
@@ -956,7 +961,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
                           <div className="text-right">
                             <span className="text-[9px] text-[#cdc3d4]/40 font-mono block">Valeur Actuelle</span>
                             <span className="font-extrabold text-[#bb86fc] tracking-tight font-mono">
-                              ${product.price.toLocaleString()}
+                              {product.price.toLocaleString()} €
                             </span>
                           </div>
                         )}
@@ -996,7 +1001,7 @@ function Home({ user, onLogout, onSelectAuction, onNavigate }) {
                         {product.category !== 'Voitures JDM' ? (
                           <>
                             <div className="font-extrabold text-base md:text-lg text-zinc-100 font-mono">
-                              ${product.price.toLocaleString()}
+                              {product.price.toLocaleString()} €
                             </div>
                             <button
                               onClick={() => handleAddToCart(product)}
