@@ -18,6 +18,10 @@ const readStoredList = (key) => {
 };
 
 function App() {
+  const [apiUrl, setApiUrl] = useState(() => {
+    return localStorage.getItem('mn_api_url') || 'http://localhost/Projet_Piscine/backend';
+  });
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +36,12 @@ function App() {
 
   // Données de transaction au moment de passer à la caisse
   const [checkoutData, setCheckoutData] = useState(null);
+
+  // Gestionnaire pour mettre à jour l'URL d'API
+  const handleApiUrlChange = (newUrl) => {
+    setApiUrl(newUrl);
+    localStorage.setItem('mn_api_url', newUrl);
+  };
 
   // Gestion du panier global
   const handleAddToCart = (product) => {
@@ -60,19 +70,20 @@ function App() {
   useEffect(() => {
     try {
       const active = localStorage.getItem('mn_session_active') === 'true';
-      const email = localStorage.getItem('mn_session_email');
-      const role = localStorage.getItem('mn_session_role');
+      const storedUserJson = localStorage.getItem('mn_session_user');
       const bannedEmails = readStoredList('mn_banned_emails');
       const deletedEmails = readStoredList('mn_deleted_emails');
 
-      if (active && email && role && !bannedEmails.includes(email) && !deletedEmails.includes(email)) {
-        const storedUser = mockUsers.find((account) => account.email === email);
-        setUser(storedUser ? { ...storedUser, password: undefined } : { email, role });
-        setIsLoggedIn(true);
+      if (active && storedUserJson) {
+        const storedUser = JSON.parse(storedUserJson);
+        if (!bannedEmails.includes(storedUser.email) && !deletedEmails.includes(storedUser.email)) {
+          setUser(storedUser);
+          setIsLoggedIn(true);
+        } else {
+          handleLogout();
+        }
       } else if (active) {
-        localStorage.removeItem('mn_session_active');
-        localStorage.removeItem('mn_session_email');
-        localStorage.removeItem('mn_session_role');
+        handleLogout();
       }
     } catch (e) {
       console.error('Erreur de lecture de la session locale :', e);
@@ -83,15 +94,12 @@ function App() {
 
   // Gérer la connexion
   const handleLogin = (userData) => {
-    const storedUser = mockUsers.find((account) => account.email === userData.email);
-    const fullUser = storedUser ? { ...storedUser, password: undefined } : userData;
-    setUser(fullUser);
+    setUser(userData);
     setIsLoggedIn(true);
     setCurrentView('home');
     try {
       localStorage.setItem('mn_session_active', 'true');
-      localStorage.setItem('mn_session_email', fullUser.email);
-      localStorage.setItem('mn_session_role', fullUser.role);
+      localStorage.setItem('mn_session_user', JSON.stringify(userData));
     } catch (e) {
       console.error('Erreur de sauvegarde de la session locale :', e);
     }
@@ -107,8 +115,7 @@ function App() {
     setCheckoutData(null);
     try {
       localStorage.removeItem('mn_session_active');
-      localStorage.removeItem('mn_session_email');
-      localStorage.removeItem('mn_session_role');
+      localStorage.removeItem('mn_session_user');
     } catch (e) {
       console.error('Erreur de nettoyage de la session locale :', e);
     }
@@ -131,7 +138,7 @@ function App() {
   return (
     <>
       {activeView === 'login' ? (
-        <Login onLogin={handleLogin} onBack={() => setCurrentView('home')} />
+        <Login onLogin={handleLogin} onBack={() => setCurrentView('home')} apiUrl={apiUrl} />
       ) : activeView === 'home' ? (
         <Home 
           user={isLoggedIn ? user : null} 
@@ -140,6 +147,8 @@ function App() {
           onRemoveFromCart={handleRemoveFromCart}
           onLogout={handleLogout} 
           onLoginRequest={() => setCurrentView('login')}
+          apiUrl={apiUrl}
+          onApiUrlChange={handleApiUrlChange}
           onSelectAuction={(product) => {
             if (!isLoggedIn) {
               setPopup({
@@ -172,6 +181,7 @@ function App() {
           onAddToCart={handleAddToCart}
           onRemoveFromCart={handleRemoveFromCart}
           onLogout={handleLogout}
+          apiUrl={apiUrl}
           onSelectAuction={(product) => {
             console.log("App: Navigating to auction view for:", product);
             setActiveAuctionProduct(product);
@@ -194,9 +204,16 @@ function App() {
       ) : activeView === 'account' ? (
         <Account
           user={user}
-          onUpdateUser={(updatedData) => setUser(prev => ({ ...prev, ...updatedData }))}
+          onUpdateUser={(updatedData) => {
+            setUser(prev => {
+              const updated = { ...prev, ...updatedData };
+              localStorage.setItem('mn_session_user', JSON.stringify(updated));
+              return updated;
+            });
+          }}
           onNavigate={handleNavigate}
           onLogout={handleLogout}
+          apiUrl={apiUrl}
         />
       ) : (
         <Auction 
@@ -205,6 +222,7 @@ function App() {
           onBack={() => handleNavigate('auctions_list')} 
           onLogout={handleLogout}
           onNavigate={handleNavigate}
+          apiUrl={apiUrl}
         />
       )}
 

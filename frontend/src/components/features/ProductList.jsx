@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Database, AlertTriangle, RefreshCw, Settings, Sliders, Tag, Calendar, Gauge, Check } from 'lucide-react';
+import { getJDMImage } from '../../utils/jdmImages';
 
 export default function ProductList() {
   // Available pre-configured API URLs for MAMP
@@ -276,7 +277,7 @@ export default function ProductList() {
               <div className="relative h-48 sm:h-52 bg-carbon-950 overflow-hidden">
                 {product.image_url ? (
                   <img 
-                    src={product.image_url} 
+                    src={getJDMImage(product.model, product.brand, product.image_url)} 
                     alt={`${product.brand} ${product.model}`}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => {

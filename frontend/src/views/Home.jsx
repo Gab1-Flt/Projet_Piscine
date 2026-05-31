@@ -9,6 +9,7 @@ import {
 import ProductList from '../components/features/ProductList';
 import { adminStats, initialPendingListings, mockUsers } from '../data/mockData';
 import SellerDashboard from './SellerDashboard';
+import { getJDMImage } from '../utils/jdmImages';
 
 const roleLabels = {
   utilisateur: 'Utilisateur',
@@ -314,7 +315,7 @@ function AdminWorkspace({
   );
 }
 
-function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSelectAuction, onNavigate, onLoginRequest }) {
+function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSelectAuction, onNavigate, onLoginRequest, apiUrl, onApiUrlChange }) {
   // Jeu de données des produits traduit en français, en lien avec init.sql
   const initialProducts = [
     {
@@ -420,6 +421,56 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
   const canModerate = isAdmin || isDirector;
 
   const [products, setProducts] = useState(initialProducts);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/products/index.php`);
+        const responseJson = await res.json();
+        if (responseJson.status === 'success') {
+          const mapped = responseJson.data.map(item => {
+            // Translate categories
+            let cat = 'Voitures JDM';
+            if (item.category_name === 'Engines' || item.category_name === 'Turbo') {
+              cat = 'Pièces Performance';
+            } else if (item.category_name === 'Wheels' || item.category_name === 'Bodywork') {
+              cat = 'Accessoires';
+            }
+
+            // Construct status based on sale_type
+            let displayStatus = 'Achat Direct';
+            if (item.sale_type === 'auction') {
+              displayStatus = 'Enchère en Cours';
+            } else if (item.sale_type === 'negotiation') {
+              displayStatus = 'Négociation';
+            }
+
+            return {
+              id: parseInt(item.id),
+              brand: item.brand,
+              model: item.model,
+              year: parseInt(item.year) || 2024,
+              price: parseFloat(item.price),
+              mileage: item.mileage ? parseInt(item.mileage) : null,
+              chassis: item.brand.substring(0, 3).toUpperCase() + '-' + item.id + '00' + item.id,
+              engine: item.brand === 'Toyota' ? '2JZ-GTE' : item.brand === 'Nissan' ? 'RB26DETT' : item.brand === 'Mazda' ? '13B-REW' : 'K20A',
+              power: item.brand === 'Toyota' ? '320 ch' : item.brand === 'Nissan' ? '276 ch' : item.brand === 'Mazda' ? '276 ch' : '220 ch',
+              image: getJDMImage(item.model, item.brand, item.image_url),
+              category: cat,
+              status: displayStatus,
+              saleType: item.sale_type,
+              verified: true
+            };
+          });
+          setProducts(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch products for Home page:", err);
+      }
+    };
+    fetchProducts();
+  }, [apiUrl]);
+
   const [pendingListings, setPendingListings] = useState(initialPendingListings);
   const [adminUsers, setAdminUsers] = useState(() => {
     try {

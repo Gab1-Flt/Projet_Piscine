@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Mail, Lock, ArrowRight, Zap, Shield, User, Sparkles, Eye, EyeOff, Cpu } from 'lucide-react';
 
-function Login({ onLogin, onBack }) {
+function Login({ onLogin, onBack, apiUrl }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [role, setRole] = useState('buyer'); // 'buyer', 'seller' ou 'admin'
   const [email, setEmail] = useState('buyer@mercatonova.com');
-  const [password, setPassword] = useState('••••••••');
+  const [password, setPassword] = useState('password123'); // seed data uses password123 as default
   const [showPassword, setShowPassword] = useState(false);
 
   // États pour l'inscription
@@ -19,27 +19,81 @@ function Login({ onLogin, onBack }) {
     setRole(selectedRole);
     if (!isRegistering) {
       if (selectedRole === 'admin') {
-        setEmail('admin@mercatonova.com');
+        setEmail('gabin@mercatonova.com');
       } else if (selectedRole === 'seller') {
-        setEmail('seller@mercatonova.com');
+        setEmail('celestin@mercatonova.com');
       } else {
-        setEmail('buyer@mercatonova.com');
+        setEmail('takumi.fujiwara@akina.jp');
       }
+      setPassword('password123');
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (isRegistering) {
-      // Inscription simulée sans logique réelle
-      setPopup({
-        title: "Inscription Réussie",
-        message: "Inscription réussie (Simulation). Bienvenue au Syndicat ! Vous pouvez maintenant vous connecter."
-      });
-      setIsRegistering(false);
+      if (password !== confirmPassword) {
+        setPopup({
+          title: "Erreur de validation",
+          message: "La confirmation de la clé d'accès ne correspond pas."
+        });
+        return;
+      }
+      try {
+        const res = await fetch(`${apiUrl}/api/auth/register.php`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ username, email, password, role })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          setPopup({
+            title: "Inscription Réussie",
+            message: data.message || "Bienvenue au Syndicat ! Vous pouvez maintenant vous connecter."
+          });
+          setIsRegistering(false);
+          setPassword('');
+          setConfirmPassword('');
+        } else {
+          setPopup({
+            title: "Erreur d'inscription",
+            message: data.message || "Impossible de compléter l'inscription."
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        setPopup({
+          title: "Panne Réseau API",
+          message: "Impossible de joindre le serveur d'inscription. Veuillez vérifier que votre serveur local MAMP est démarré."
+        });
+      }
     } else {
-      // Connecte instantanément sans requête API pour cette étape
-      onLogin({ email, role });
+      try {
+        const res = await fetch(`${apiUrl}/api/auth/login.php`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+          onLogin(data.user);
+        } else {
+          setPopup({
+            title: "Accès Refusé",
+            message: data.message || "Identifiants du Syndicat invalides."
+          });
+        }
+      } catch (err) {
+        console.error(err);
+        setPopup({
+          title: "Panne Réseau API",
+          message: "Impossible de joindre le serveur de connexion. Veuillez vérifier que votre serveur local MAMP est démarré."
+        });
+      }
     }
   };
 

@@ -3,8 +3,9 @@ import {
   Compass, Timer, MessageSquare, ShoppingCart, User, Bell, Heart, LogOut,
   Shield, Cpu, Grid, List, Search, ArrowRight, Gavel, X, Check, Landmark, Zap, Sparkles, AlertTriangle
 } from 'lucide-react';
+import { getJDMImage } from '../utils/jdmImages';
 
-function AuctionsList({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSelectAuction, onNavigate }) {
+function AuctionsList({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSelectAuction, onNavigate, apiUrl }) {
   // Liste des véhicules aux enchères uniquement
   const initialAuctions = [
     {
@@ -44,6 +45,46 @@ function AuctionsList({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout
   ];
 
   const [auctions, setAuctions] = useState(initialAuctions);
+
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/auctions/index.php`);
+        const responseJson = await res.json();
+        if (responseJson.status === 'success') {
+          const mapped = responseJson.data.map(item => {
+            const timeEnd = new Date(item.end_date.replace(/-/g, "/")).getTime(); // browser compatibility fix for date format
+            const timeNow = Date.now();
+            const secondsLeft = Math.max(0, Math.floor((timeEnd - timeNow) / 1000));
+
+            return {
+              id: parseInt(item.product_id), // maps to active auction's product ID
+              auctionId: parseInt(item.auction_id),
+              brand: item.brand,
+              model: item.model,
+              year: parseInt(item.year) || 2024,
+              price: parseFloat(item.current_bid),
+              mileage: item.mileage ? parseInt(item.mileage) : 0,
+              chassis: item.brand.substring(0, 3).toUpperCase() + '-' + item.product_id + '00' + item.product_id,
+              engine: item.brand === 'Toyota' ? '2JZ-GTE' : item.brand === 'Nissan' ? 'RB26DETT' : item.brand === 'Mazda' ? '13B-REW' : 'K20A',
+              power: item.brand === 'Toyota' ? '320 ch' : item.brand === 'Nissan' ? '276 ch' : item.brand === 'Mazda' ? '276 ch' : '220 ch',
+              image: getJDMImage(item.model, item.brand, item.image_url),
+              category: 'Voitures JDM',
+              status: 'Enchère en Cours',
+              saleType: 'auction',
+              verified: true,
+              timeLeft: secondsLeft
+            };
+          });
+          setAuctions(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch active auctions for AuctionsList:", err);
+      }
+    };
+    fetchAuctions();
+  }, [apiUrl]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid');
   

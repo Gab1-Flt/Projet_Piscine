@@ -3,8 +3,9 @@ import {
   ArrowLeft, Timer, Zap, Check, X, Shield, Info,
   MessageSquare, User, Award, TrendingUp, Coins, Gavel, RotateCcw, Sparkles, AlertTriangle
 } from 'lucide-react';
+import { getJDMImage } from '../utils/jdmImages';
 
-function Auction({ user, product, onBack, onLogout, onNavigate }) {
+function Auction({ user, product, onBack, onLogout, onNavigate, apiUrl }) {
   // Produit de repli si aucun n'est passé en prop
   const currentProduct = product || {
     id: 1,
@@ -25,7 +26,7 @@ function Auction({ user, product, onBack, onLogout, onNavigate }) {
 
   // États principaux
   const [currentPrice, setCurrentPrice] = useState(currentProduct.price);
-  const [timeLeft, setTimeLeft] = useState(45); // Compte à rebours initial de 45 secondes pour des tests rapides
+  const [timeLeft, setTimeLeft] = useState(currentProduct.timeLeft || 45); // Compte à rebours initial de 45 secondes pour des tests rapides
   const [isCompleted, setIsCompleted] = useState(false);
   const [hasWon, setHasWon] = useState(false);
   const [highestBidder, setHighestBidder] = useState('drift_king');
@@ -144,7 +145,7 @@ function Auction({ user, product, onBack, onLogout, onNavigate }) {
   }, [highestBidder, currentPrice, isCompleted, timeLeft]);
 
   // Placer une offre manuellement (Utilisateur)
-  const handleUserBidSubmit = (e) => {
+  const handleUserBidSubmit = async (e) => {
     e.preventDefault();
     const bidAmount = parseInt(bidAmountInput);
     if (isNaN(bidAmount) || bidAmount <= currentPrice) {
@@ -156,11 +157,47 @@ function Auction({ user, product, onBack, onLogout, onNavigate }) {
       return;
     }
 
-    applyBid('Vous', bidAmount, 'VO', false);
-    
-    // Déclencher une petite notification de succès pour l'utilisateur
-    setUserNotification("Votre offre a été placée en tête du réseau !");
-    setTimeout(() => setUserNotification(null), 2500);
+    try {
+      const res = await fetch(`${apiUrl}/api/auctions/bid.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          auction_id: currentProduct.auctionId || 1, // Fallback to 1
+          buyer_id: user?.id || 5, // Fallback to Takumi Fujiwara in SQL seeds
+          amount: bidAmount
+        })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        applyBid('Vous', data.data.current_bid, 'VO', false);
+        
+        // Règle Anti-Sniping : prolonge à 60s si le serveur signale une prolongation
+        if (data.data.sniping_extended) {
+          setTimeLeft(60);
+          setSnipingAlert(true);
+          setTimeout(() => setSnipingAlert(false), 2000);
+        }
+
+        // Déclencher une petite notification de succès pour l'utilisateur
+        setUserNotification("Votre offre a été placée en tête du réseau et enregistrée dans la base de données !");
+        setTimeout(() => setUserNotification(null), 2500);
+      } else {
+        setPopup({
+          title: "Offre Rejetée",
+          message: data.message || "Impossible de soumettre votre offre.",
+          type: "warning"
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setPopup({
+        title: "Alerte Réseau JDM",
+        message: "Impossible d'enregistrer l'offre sur le serveur local MAMP. Connexion refusée.",
+        type: "warning"
+      });
+    }
   };
 
   // Simuler la fin de l'enchère (Accélérer à 2 secondes pour tester le Panel 5)
@@ -263,7 +300,7 @@ function Auction({ user, product, onBack, onLogout, onNavigate }) {
           {/* Boîtier Photo avec badge LIVE */}
           <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-[#1c1b1b] shadow-[0_15px_35px_rgba(0,0,0,0.5)] group">
             <img 
-              src={currentProduct.image} 
+              src={getJDMImage(currentProduct.model, currentProduct.brand, currentProduct.image)} 
               alt={currentProduct.model} 
               className="w-full h-[320px] sm:h-[450px] object-cover group-hover:scale-[1.02] transition-transform duration-700 opacity-90"
             />
@@ -563,7 +600,7 @@ function Auction({ user, product, onBack, onLogout, onNavigate }) {
             {/* Récapitulatif du véhicule gagné */}
             <div className="bg-[#1c1b1b] border border-white/5 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4 text-left">
               <img 
-                src={currentProduct.image} 
+                src={getJDMImage(currentProduct.model, currentProduct.brand, currentProduct.image)} 
                 alt={currentProduct.model} 
                 className="w-32 h-20 object-cover rounded-lg border border-white/10 flex-shrink-0"
               />
