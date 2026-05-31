@@ -289,10 +289,8 @@ function Preparation({ user, onLogout, onNavigate }) {
             {/* Messagerie */}
             <div className="relative">
               <button 
-                onClick={() => { setShowMessagesMenu(!showMessagesMenu); setShowNotificationsMenu(false); setShowProfileMenu(false); }}
-                className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${
-                  showMessagesMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
-                }`}
+                onClick={() => onNavigate('messages')}
+                className="p-2 rounded-full transition-all relative active:scale-95 cursor-pointer text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5"
                 title="Messages"
               >
                 <MessageSquare size={20} />

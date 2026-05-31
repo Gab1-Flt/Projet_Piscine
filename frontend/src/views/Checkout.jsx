@@ -5,7 +5,7 @@ import {
   Info, Cpu, Landmark, HelpCircle, FileText
 } from 'lucide-react';
 
-function Checkout({ checkoutData, onClearCart, onNavigate }) {
+function Checkout({ checkoutData, onClearCart, onNavigate, user, apiUrl }) {
   // Par défaut, si aucune donnée n'est fournie (accès direct), on simule un article
   const transactionType = checkoutData?.type || 'cart';
   const rawItems = checkoutData?.items || [
@@ -55,16 +55,62 @@ function Checkout({ checkoutData, onClearCart, onNavigate }) {
         }, 800);
       } else {
         // Fin de la transaction avec succès !
-        setIsProcessing(false);
-        setPaymentSuccess(true);
-        // Nettoyer le panier si c'est un achat de panier
-        if (transactionType === 'cart' && onClearCart) {
-          onClearCart();
+        // Enregistrer la transaction dans la base de données réelle via notre API PHP
+        const payload = {
+          buyer_id: user?.id || 5,
+          payment_method: paymentMethod,
+          transaction_type: transactionType === 'cart' ? 'direct' : transactionType
+        };
+
+        if (transactionType === 'preparation') {
+          payload.is_preparation = true;
+          payload.preparation_details = {
+            title: `Préparation Custom JDM (${rawItems[0]?.name || 'Projet'})`,
+            brand: 'JDM',
+            model: 'Custom',
+            price: totalAmount,
+            description: `Commande de préparation JDM personnalisée comprenant : ${rawItems.map(i => i.name).join(', ')}`
+          };
+        } else {
+          payload.items = rawItems.map(item => ({
+            product_id: item.id || 7, // Produit fallback
+            amount: item.price
+          }));
         }
+
+        fetch(`${apiUrl}/api/transactions/create.php`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error("Erreur de communication avec la base de données.");
+          }
+          return res.json();
+        })
+        .then(data => {
+          if (data.status === 'success') {
+            setIsProcessing(false);
+            setPaymentSuccess(true);
+            // Nettoyer le panier si c'est un achat de panier
+            if (transactionType === 'cart' && onClearCart) {
+              onClearCart();
+            }
+          } else {
+            throw new Error(data.message || "Erreur lors de l'enregistrement en base.");
+          }
+        })
+        .catch(err => {
+          setIsProcessing(false);
+          setErrorMessage(err.message || "Impossible de joindre le serveur de base de données. Veuillez réessayer.");
+        });
       }
     }
     return () => clearTimeout(timer);
-  }, [isProcessing, processingStep, transactionType, onClearCart]);
+  }, [isProcessing, processingStep, transactionType, onClearCart, user, apiUrl, paymentMethod, rawItems, totalAmount]);
 
   // Détecteur de fournisseur de carte pour afficher le bon logo néon
   const getCardProvider = () => {

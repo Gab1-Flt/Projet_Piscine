@@ -635,6 +635,7 @@ function Auction({ user, product, onBack, onLogout, onNavigate, apiUrl }) {
                 onClick={() => onNavigate('checkout', {
                   type: 'auction',
                   items: [{
+                    id: currentProduct.id,
                     name: `Enchère gagnée : ${currentProduct.brand} ${currentProduct.model}`,
                     price: currentPrice,
                     image: currentProduct.image,

@@ -34,7 +34,26 @@ function AdminWorkspace({
   onDeleteProduct,
   onOpenEdit,
   onStartAdd,
+  apiUrl,
 }) {
+  const [transactions, setTransactions] = React.useState([]);
+  const [loadingTrans, setLoadingTrans] = React.useState(false);
+
+  React.useEffect(() => {
+    if (activePanel === 'transactions' && apiUrl) {
+      setLoadingTrans(true);
+      fetch(`${apiUrl}/api/transactions/index.php`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.status === 'success') {
+            setTransactions(res.data || []);
+          }
+        })
+        .catch(err => console.error("Erreur de récupération des transactions:", err))
+        .finally(() => setLoadingTrans(false));
+    }
+  }, [activePanel, apiUrl]);
+
   const isDirector = user?.role === 'directeur';
   const visibleUsers = isDirector ? users : users.filter((account) => account.role !== 'directeur');
   const visibleProducts = products;
@@ -43,6 +62,7 @@ function AdminWorkspace({
     { id: 'overview', label: 'Statistiques', icon: BarChart3 },
     { id: 'pending', label: 'Annonces à valider', icon: FileCheck },
     { id: 'accounts', label: 'Gérer les comptes', icon: Users },
+    { id: 'transactions', label: 'Transactions', icon: Landmark },
     ...(isDirector ? [{ id: 'director', label: 'Espace directeur', icon: Crown }] : []),
   ];
 
@@ -92,7 +112,7 @@ function AdminWorkspace({
         <section className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {[
-              { label: 'Utilisateurs actifs', value: adminStats.activeUsers.toLocaleString(), hint: '+12.5% cette semaine', icon: Users },
+              { label: 'Utilisateurs actifs', value: visibleUsers.length.toLocaleString(), hint: 'Total en temps réel', icon: Users },
               { label: 'Volume quotidien', value: `${(adminStats.dailyVolume).toLocaleString()} €`, hint: '+8.2% cette semaine', icon: Landmark },
               { label: 'Annonces signalees', value: adminStats.flaggedListings, hint: 'Action requise', icon: AlertTriangle },
             ].map((metric) => {
@@ -311,6 +331,78 @@ function AdminWorkspace({
           </div>
         </section>
       )}
+
+      {activePanel === 'transactions' && (
+        <section className="space-y-6">
+          <h2 className="text-xl font-extrabold italic uppercase tracking-wider text-[#cdc3d4] flex items-center gap-2">
+            <Landmark className="text-[#bb86fc]" />
+            Suivi des Transactions SQL en Direct
+          </h2>
+          <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
+            <div className="overflow-x-auto">
+              {loadingTrans ? (
+                <div className="py-12 text-center text-xs font-mono text-[#cdc3d4]/50 animate-pulse">
+                  Chargement du grand livre des transactions...
+                </div>
+              ) : transactions.length === 0 ? (
+                <div className="py-16 text-center text-xs font-mono text-[#cdc3d4]/50">
+                  Aucune transaction enregistrée en base de données.
+                </div>
+              ) : (
+                <table className="w-full text-left border-collapse font-mono text-[10px]">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-[#1c1b1b]/50 text-[#cdc3d4]/50 uppercase tracking-widest">
+                      <th className="p-4">ID / Date</th>
+                      <th className="p-4">Acheteur</th>
+                      <th className="p-4">Produit</th>
+                      <th className="p-4 text-center">Type / Méthode</th>
+                      <th className="p-4 text-right">Montant</th>
+                      <th className="p-4 text-center">Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {transactions.map((t) => (
+                      <tr key={t.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="p-4">
+                          <div className="font-bold text-white">#TR-{t.id}</div>
+                          <div className="text-[#cdc3d4]/40 text-[9px] mt-0.5">{new Date(t.created_at).toLocaleString()}</div>
+                        </td>
+                        <td className="p-4">
+                          <div className="font-bold text-white">{t.buyer_username || 'Inconnu'}</div>
+                          <div className="text-[#cdc3d4]/50">{t.buyer_email || 'Pas d\'email'}</div>
+                        </td>
+                        <td className="p-4 flex items-center gap-3">
+                          {t.product_image ? (
+                            <img src={t.product_image} alt={t.product_title} className="w-9 h-7 object-cover rounded border border-white/10" />
+                          ) : (
+                            <div className="w-9 h-7 bg-white/5 border border-white/10 rounded flex items-center justify-center text-[8px] text-[#cdc3d4]/40 font-mono">N/A</div>
+                          )}
+                          <div>
+                            <div className="font-bold text-white">{t.product_title || 'Service Custom'}</div>
+                            <div className="text-[#cdc3d4]/40 text-[9px]">{t.product_brand || ''} {t.product_model || ''}</div>
+                          </div>
+                        </td>
+                        <td className="p-4 text-center">
+                          <div className="text-zinc-300 uppercase font-semibold">{t.transaction_type}</div>
+                          <div className="text-[#cdc3d4]/40 text-[9px] uppercase mt-0.5">{t.payment_method.replace('_simulated', '')}</div>
+                        </td>
+                        <td className="p-4 text-right font-bold text-[#17deca] text-[11px]">
+                          {Number(t.amount).toLocaleString()} €
+                        </td>
+                        <td className="p-4 text-center">
+                          <span className="px-2 py-0.5 rounded text-[8px] uppercase tracking-wider font-bold bg-green-500/10 text-green-400">
+                            {t.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   );
 }
@@ -483,7 +575,52 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
       return mockUsers;
     }
   });
+
+  useEffect(() => {
+    if (!canModerate) return;
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/users/index.php`);
+        const responseJson = await res.json();
+        if (responseJson.status === 'success') {
+          const mapped = responseJson.data.map(item => {
+            const parts = item.username.split('_');
+            const firstName = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1) : 'Pilote';
+            const lastName = parts[1] ? parts[1].toUpperCase() : 'NOVA';
+
+            return {
+              id: parseInt(item.id),
+              username: item.username,
+              firstName: firstName,
+              lastName: lastName,
+              email: item.email,
+              phone: '+33 6 ' + item.id + '2 34 ' + item.id + '6 78',
+              role: item.role === 'admin' ? 'admin' : item.role === 'seller' ? 'seller' : 'utilisateur',
+              status: item.account_status === 'suspended' ? 'banned' : item.account_status,
+              city: 'Tokyo Desk',
+              createdAt: item.created_at ? item.created_at.substring(0, 10) : '2026-05-01',
+              idCardStatus: item.role === 'admin' ? 'validee' : 'en verification',
+              idCardCriteria: 'recto verso lisible, date valide, nom coherent',
+              bankCard: 'Visa escrow **** 4242'
+            };
+          });
+          setAdminUsers(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch users for Admin Panel:", err);
+      }
+    };
+    fetchUsers();
+  }, [apiUrl, user, canModerate]);
+
   const [activePanel, setActivePanel] = useState('catalog');
+
+  // Redirection vers le catalogue si l'utilisateur se déconnecte ou perd ses droits
+  useEffect(() => {
+    if (!canModerate) {
+      setActivePanel('catalog');
+    }
+  }, [canModerate]);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productDraft, setProductDraft] = useState(null);
   const [addingProduct, setAddingProduct] = useState(false);
@@ -522,7 +659,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
   const [favorites, setFavorites] = useState([]); // Tableau contenant les IDs des produits favoris
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false); // Filtre favoris uniquement
   const [salesFilter, setSalesFilter] = useState('all'); // 'all', 'auction', 'negotiation', 'direct'
-  
+
   // États de Panier Premium (consommés par les props)
   const [showCartMenu, setShowCartMenu] = useState(false);
 
@@ -625,27 +762,78 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
     setPendingListings(prev => prev.filter(item => item.id !== listingId));
   };
 
-  const handleBanUser = (email) => {
-    if (!canModerate) return;
-    writeStoredList('mn_banned_emails', email);
-    setAdminUsers(prev => prev.map(account => account.email === email ? { ...account, status: 'banned' } : account));
-  };
-
-  const handleUnbanUser = (email) => {
+  const handleBanUser = async (email) => {
     if (!canModerate) return;
     try {
-      const current = JSON.parse(localStorage.getItem('mn_banned_emails') || '[]');
-      localStorage.setItem('mn_banned_emails', JSON.stringify(current.filter(item => item !== email)));
-    } catch (e) {
-      console.error(e);
+      const res = await fetch(`${apiUrl}/api/users/moderate.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, action: 'ban' })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        writeStoredList('mn_banned_emails', email);
+        setAdminUsers(prev => prev.map(account => account.email === email ? { ...account, status: 'banned' } : account));
+        setPopup({
+          title: "Pilote Suspendu",
+          message: "L'accès au réseau a été bloqué pour " + email + " dans la base de données !",
+          type: "info"
+        });
+      }
+    } catch (err) {
+      console.error(err);
     }
-    setAdminUsers(prev => prev.map(account => account.email === email ? { ...account, status: 'active' } : account));
   };
 
-  const handleDeleteUser = (email) => {
+  const handleUnbanUser = async (email) => {
     if (!canModerate) return;
-    writeStoredList('mn_deleted_emails', email);
-    setAdminUsers(prev => prev.filter(account => account.email !== email));
+    try {
+      const res = await fetch(`${apiUrl}/api/users/moderate.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, action: 'unban' })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        try {
+          const current = JSON.parse(localStorage.getItem('mn_banned_emails') || '[]');
+          localStorage.setItem('mn_banned_emails', JSON.stringify(current.filter(item => item !== email)));
+        } catch (e) {
+          console.error(e);
+        }
+        setAdminUsers(prev => prev.map(account => account.email === email ? { ...account, status: 'active' } : account));
+        setPopup({
+          title: "Pilote Réactivé",
+          message: "L'accès au réseau a été réactivé pour " + email + " dans la base de données !",
+          type: "info"
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteUser = async (email) => {
+    if (!canModerate) return;
+    try {
+      const res = await fetch(`${apiUrl}/api/users/moderate.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, action: 'delete' })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        writeStoredList('mn_deleted_emails', email);
+        setAdminUsers(prev => prev.filter(account => account.email !== email));
+        setPopup({
+          title: "Compte Supprimé",
+          message: "Le compte " + email + " a été marqué comme supprimé dans la base de données !",
+          type: "info"
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleProposeListingSubmit = (e) => {
@@ -829,19 +1017,19 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
 
           {/* Onglets Principaux */}
           <div className="hidden lg:flex gap-8 items-center font-semibold text-sm">
-            <button 
+            <button
               onClick={() => setSalesFilter('all')}
               className="text-[#bb86fc] border-b-2 border-[#bb86fc] pb-1 cursor-pointer transition-colors font-semibold text-sm bg-transparent border-none"
             >
               Catalogue
             </button>
-            <button 
+            <button
               onClick={() => onNavigate('auctions_list')}
               className="text-[#cdc3d4] hover:text-[#e5e2e1] pb-1 cursor-pointer transition-colors font-semibold text-sm bg-transparent border-none"
             >
               Enchères
             </button>
-            <button 
+            <button
               onClick={() => onNavigate('preparation')}
               className="text-[#cdc3d4] hover:text-[#e5e2e1] pb-1 cursor-pointer transition-colors bg-transparent border-none font-semibold text-sm"
             >
@@ -873,14 +1061,13 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
             </div>
 
             <div className="flex gap-2.5">
-              
+
               {/* Menu Déroulant Notifications */}
               <div className="relative">
-                <button 
+                <button
                   onClick={toggleNotifications}
-                  className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${
-                    showNotificationsMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
-                  }`}
+                  className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${showNotificationsMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
+                    }`}
                   title="Notifications"
                 >
                   <Bell size={20} />
@@ -895,18 +1082,18 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                     <div className="absolute right-0 mt-3 w-80 rounded-xl border border-white/10 bg-[#1c1b1b] py-3 shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-40 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
                       <div className="px-4 pb-2 border-b border-white/5 flex justify-between items-center">
                         <span className="text-[10px] font-mono font-bold text-[#cdc3d4]/50 uppercase tracking-widest">Flux Réseau</span>
-                        <button 
+                        <button
                           onClick={() => setNotifications(notifications.map(n => ({ ...n, read: true })))}
                           className="text-[9px] font-mono text-[#bb86fc] hover:underline font-bold"
                         >
                           Tout lire
                         </button>
                       </div>
-                      
+
                       <div className="max-h-64 overflow-y-auto mt-1 divide-y divide-white/5">
                         {notifications.map(n => (
-                          <div 
-                            key={n.id} 
+                          <div
+                            key={n.id}
                             onClick={() => handleReadNotification(n.id)}
                             className={`px-4 py-3 hover:bg-white/5 transition-all relative cursor-pointer ${!n.read ? 'bg-primary/5' : ''}`}
                           >
@@ -923,11 +1110,10 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
 
               {/* Menu Déroulant Messagerie */}
               <div className="relative">
-                <button 
+                <button
                   onClick={toggleMessages}
-                  className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${
-                    showMessagesMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
-                  }`}
+                  className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${showMessagesMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
+                    }`}
                   title="Messages"
                 >
                   <MessageSquare size={20} />
@@ -942,17 +1128,17 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                         <span className="text-[10px] font-mono font-bold text-[#cdc3d4]/50 uppercase tracking-widest">Messagerie</span>
                         <span className="text-[9px] font-mono text-[#17deca] font-bold">3 Actifs</span>
                       </div>
-                      
+
                       <div className="max-h-64 overflow-y-auto mt-1 divide-y divide-white/5">
                         {messages.map(m => (
-                          <div 
-                            key={m.id} 
-                            onClick={() => { setShowMessagesMenu(false); setPopup({ title: "Simulation Messagerie", message: `Discussion ouverte avec ${m.sender} (simulation). Une fois le backend connecté par Nicolas, cela ouvrira un chat temps réel.`, type: "info" }); }} 
+                          <div
+                            key={m.id}
+                            onClick={() => { setShowMessagesMenu(false); onNavigate('messages'); }}
                             className="px-4 py-3 hover:bg-white/5 transition-all flex items-start gap-3 cursor-pointer"
                           >
                             <div className="relative flex-shrink-0">
                               <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs text-[#bb86fc]">
-                                {m.sender.split(' ').map(n=>n[0]).join('')}
+                                {m.sender.split(' ').map(n => n[0]).join('')}
                               </div>
                               {m.online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#17deca] border-2 border-[#1c1b1b]"></span>}
                             </div>
@@ -965,6 +1151,15 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                             </div>
                           </div>
                         ))}
+                      </div>
+
+                      <div className="px-4 pt-2.5 border-t border-white/5 mt-1 text-center">
+                        <button
+                          onClick={() => { setShowMessagesMenu(false); onNavigate('messages'); }}
+                          className="w-full text-center text-[10px] font-mono text-[#bb86fc] hover:underline font-bold py-1 cursor-pointer uppercase tracking-wider bg-transparent border-none"
+                        >
+                          Ouvrir le Réseau de Messagerie →
+                        </button>
                       </div>
                     </div>
                   </>
@@ -988,11 +1183,10 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
 
               {/* Menu Déroulant Panier */}
               <div className="relative">
-                <button 
+                <button
                   onClick={toggleCart}
-                  className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${
-                    showCartMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
-                  }`}
+                  className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${showCartMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
+                    }`}
                   title="Panier"
                 >
                   <ShoppingCart size={20} />
@@ -1011,7 +1205,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                         <span className="text-[10px] font-mono font-bold text-[#cdc3d4]/50 uppercase tracking-widest">Panier</span>
                         <span className="text-[9px] font-mono text-zinc-400 font-bold">{cartItems.length} article{cartItems.length > 1 ? 's' : ''}</span>
                       </div>
-                      
+
                       <div className="max-h-64 overflow-y-auto mt-1 divide-y divide-white/5">
                         {cartItems.length === 0 ? (
                           <div className="px-4 py-8 text-center space-y-2">
@@ -1028,7 +1222,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                                   <span className="text-[10px] font-mono text-[#bb86fc]">{item.price.toLocaleString()} €</span>
                                 </div>
                               </div>
-                              <button 
+                              <button
                                 onClick={(e) => { e.stopPropagation(); handleRemoveFromCart(item.id); }}
                                 className="text-zinc-500 hover:text-red-400 p-1 cursor-pointer transition-colors"
                                 title="Retirer"
@@ -1046,17 +1240,17 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                             <span className="text-zinc-400">Total :</span>
                             <span className="font-bold text-[#17deca]">{cartItems.reduce((acc, item) => acc + item.price, 0).toLocaleString()} €</span>
                           </div>
-                          <button 
-                            onClick={() => { 
-                              setShowCartMenu(false); 
+                          <button
+                            onClick={() => {
+                              setShowCartMenu(false);
                               if (!isAuthenticated) {
                                 requestAuthentication("Connexion requise : Vous devez être connecté pour accéder au tunnel de paiement sécurisé.");
                                 return;
                               }
-                              onNavigate('checkout', { 
-                                type: 'cart', 
-                                items: cartItems.map(item => ({ name: `${item.brand} ${item.model}`, price: item.price, image: item.image, qty: 1 }))
-                              }); 
+                              onNavigate('checkout', {
+                                type: 'cart',
+                                items: cartItems.map(item => ({ id: item.id, name: `${item.brand} ${item.model}`, price: item.price, image: item.image, qty: 1 }))
+                              });
                             }}
                             className="w-full bg-[#bb86fc] hover:bg-[#bb86fc]/80 text-[#460283] font-bold text-[10px] font-mono py-2.5 rounded uppercase tracking-wider text-center cursor-pointer transition-colors block"
                           >
@@ -1071,11 +1265,10 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
 
               {/* Menu Profil avec Dropdown - OPAQUE */}
               <div className="relative">
-                <button 
+                <button
                   onClick={toggleProfile}
-                  className={`p-2 rounded-full transition-all active:scale-95 cursor-pointer ${
-                    showProfileMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
-                  }`}
+                  className={`p-2 rounded-full transition-all active:scale-95 cursor-pointer ${showProfileMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
+                    }`}
                   title="Mon profil"
                 >
                   <User size={20} />
@@ -1084,13 +1277,13 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                 {/* Dropdown Menu de Profil OPAQUE */}
                 {showProfileMenu && (
                   <>
-                    <div 
+                    <div
                       onClick={() => setShowProfileMenu(false)}
                       className="fixed inset-0 z-30"
                     ></div>
-                    
+
                     <div className="absolute right-0 mt-3 w-52 rounded-xl border border-white/10 bg-[#1c1b1b] py-2 shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-40 animate-in fade-in slide-in-from-top-2 duration-150">
-                      
+
                       {/* En-tête de Profil Premium */}
                       <div className="px-4 py-2.5 border-b border-white/5 mb-1.5 text-[10px] font-mono">
                         <span className="block text-[#cdc3d4]/40 font-bold uppercase tracking-wider text-[8px]">Réseau Pilote</span>
@@ -1113,7 +1306,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                       </div>
 
                       {!user && (
-                        <button 
+                        <button
                           onClick={() => { setShowProfileMenu(false); onLoginRequest?.(); }}
                           className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-primary hover:bg-primary/5 transition-all text-left cursor-pointer"
                         >
@@ -1122,9 +1315,9 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                         </button>
                       )}
 
-                      <button 
-                        onClick={() => { 
-                          setShowProfileMenu(false); 
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
                           if (!isAuthenticated) {
                             requestAuthentication("Connexion requise : Cet espace requiert une clé d'accès.");
                             return;
@@ -1136,10 +1329,10 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                         <User size={14} className="text-[#bb86fc]" />
                         <span>Mon compte</span>
                       </button>
-                      
-                      <button 
-                        onClick={() => { 
-                          setShowProfileMenu(false); 
+
+                      <button
+                        onClick={() => {
+                          setShowProfileMenu(false);
                           if (!isAuthenticated) {
                             requestAuthentication("Connexion requise : Cet espace requiert une clé d'accès.");
                             return;
@@ -1155,12 +1348,12 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                         <ShoppingCart size={14} className="text-[#ffb2bc]" />
                         <span>Mes achats</span>
                       </button>
-                      
+
                       {/* Cacher l'espace vendeur pour les clients de type buyer ou anonymes */}
                       {user && user.role !== 'buyer' && (
-                        <button 
-                          onClick={() => { 
-                            setShowProfileMenu(false); 
+                        <button
+                          onClick={() => {
+                            setShowProfileMenu(false);
                             setPopup({
                               title: "Espace Vendeur",
                               message: "La page espace vendeur doit être implémentée par Nicolas.",
@@ -1176,7 +1369,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
 
                       {/* Lien Administrateur Conditionnel */}
                       {canModerate && (
-                        <button 
+                        <button
                           onClick={() => { setShowProfileMenu(false); setActivePanel(isDirector ? 'director' : 'overview'); }}
                           className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-secondary hover:bg-secondary/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1 pt-1.5"
                         >
@@ -1187,7 +1380,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
 
                       {/* Bouton Déconnexion - Seulement si connecté */}
                       {user && (
-                        <button 
+                        <button
                           onClick={() => { setShowProfileMenu(false); onLogout(); }}
                           className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-zinc-400 hover:text-red-400 hover:bg-red-500/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1.5 pt-2"
                         >
@@ -1207,418 +1400,418 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
 
       {/* Zone de contenu principale */}
       {activePanel === 'catalog' ? (
-      <main className="max-w-[1440px] mx-auto px-4 md:px-16 py-8 grid grid-cols-4 lg:grid-cols-12 gap-6">
+        <main className="max-w-[1440px] mx-auto px-4 md:px-16 py-8 grid grid-cols-4 lg:grid-cols-12 gap-6">
 
-        {/* Panneau de Filtres Latéral */}
-        <aside className="col-span-4 lg:col-span-3 space-y-6">
-          {canModerate && (
-            <div className="glass-panel rounded-2xl p-5 border border-secondary/20">
-              <div className="flex items-center gap-2 text-secondary mb-3">
-                {isDirector ? <Crown size={18} /> : <Shield size={18} />}
-                <h3 className="font-bold text-sm uppercase tracking-wider">{isDirector ? 'Espace directeur' : 'Espace admin'}</h3>
+          {/* Panneau de Filtres Latéral */}
+          <aside className="col-span-4 lg:col-span-3 space-y-6">
+            {canModerate && (
+              <div className="glass-panel rounded-2xl p-5 border border-secondary/20">
+                <div className="flex items-center gap-2 text-secondary mb-3">
+                  {isDirector ? <Crown size={18} /> : <Shield size={18} />}
+                  <h3 className="font-bold text-sm uppercase tracking-wider">{isDirector ? 'Espace directeur' : 'Espace admin'}</h3>
+                </div>
+                <p className="text-[11px] text-[#cdc3d4]/70 font-mono mb-4">
+                  Moderation des annonces, gestion des comptes et statistiques.
+                </p>
+                <button
+                  onClick={() => setActivePanel(isDirector ? 'director' : 'overview')}
+                  className="w-full bg-secondary text-[#400013] rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider"
+                >
+                  Ouvrir la console
+                </button>
+              </div>
+            )}
+            <div className="glass-panel rounded-2xl p-5 border border-tertiary/20">
+              <div className="flex items-center gap-2 text-tertiary mb-3">
+                <Plus size={18} />
+                <h3 className="font-bold text-sm uppercase tracking-wider">Vendre un bien</h3>
               </div>
               <p className="text-[11px] text-[#cdc3d4]/70 font-mono mb-4">
-                Moderation des annonces, gestion des comptes et statistiques.
+                Toute nouvelle annonce passe en attente jusqu'a validation admin.
               </p>
               <button
-                onClick={() => setActivePanel(isDirector ? 'director' : 'overview')}
-                className="w-full bg-secondary text-[#400013] rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider"
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    requestAuthentication("Vous devez être connecté pour proposer une annonce au catalogue.");
+                    return;
+                  }
+                  if (user?.role === 'utilisateur' || user?.role === 'buyer') {
+                    setPopup({
+                      title: "Devenir Vendeur",
+                      message: "Pour proposer un bolide ou une pièce sur Mercato Nova, vous devez posséder un statut Vendeur validé. Vous pouvez vous reconnecter en choisissant le rôle Vendeur (ex: Kenji Sato / seller@mercatonova.com) pour tester ce flux.",
+                      type: "info"
+                    });
+                    return;
+                  }
+                  setProposingListing(true);
+                }}
+                className="w-full border border-tertiary/40 text-tertiary rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider hover:bg-tertiary/10"
               >
-                Ouvrir la console
+                {isAuthenticated && (user?.role === 'utilisateur' || user?.role === 'buyer') ? "Devenir Vendeur" : "Proposer une annonce"}
               </button>
             </div>
-          )}
-          <div className="glass-panel rounded-2xl p-5 border border-tertiary/20">
-            <div className="flex items-center gap-2 text-tertiary mb-3">
-              <Plus size={18} />
-              <h3 className="font-bold text-sm uppercase tracking-wider">Vendre un bien</h3>
-            </div>
-            <p className="text-[11px] text-[#cdc3d4]/70 font-mono mb-4">
-              Toute nouvelle annonce passe en attente jusqu'a validation admin.
-            </p>
-            <button
-              onClick={() => {
-                if (!isAuthenticated) {
-                  requestAuthentication("Vous devez être connecté pour proposer une annonce au catalogue.");
-                  return;
-                }
-                if (user?.role === 'utilisateur' || user?.role === 'buyer') {
-                  setPopup({
-                    title: "Devenir Vendeur",
-                    message: "Pour proposer un bolide ou une pièce sur Mercato Nova, vous devez posséder un statut Vendeur validé. Vous pouvez vous reconnecter en choisissant le rôle Vendeur (ex: Kenji Sato / seller@mercatonova.com) pour tester ce flux.",
-                    type: "info"
-                  });
-                  return;
-                }
-                setProposingListing(true);
-              }}
-              className="w-full border border-tertiary/40 text-tertiary rounded-lg py-2.5 text-[10px] font-bold uppercase tracking-wider hover:bg-tertiary/10"
-            >
-              {isAuthenticated && (user?.role === 'utilisateur' || user?.role === 'buyer') ? "Devenir Vendeur" : "Proposer une annonce"}
-            </button>
-          </div>
-          <div className="glass-panel rounded-2xl p-6 border border-white/5">
-            <div className="flex items-center space-x-2.5 mb-6">
-              <SlidersHorizontal className="text-[#bb86fc]" size={18} />
-              <h3 className="font-bold text-base tracking-wide font-sans">Affiner la Recherche</h3>
-            </div>
-
-            <div className="space-y-6">
-
-              {/* Choix des Catégories */}
-              <div>
-                <h4 className="text-[11px] font-bold text-[#cdc3d4]/50 uppercase tracking-widest mb-3">Catégories</h4>
-                <ul className="space-y-2.5">
-                  {['Voitures JDM', 'Pièces Performance', 'Accessoires'].map((cat) => (
-                    <li key={cat}>
-                      <label className="flex items-center gap-3 cursor-pointer group">
-                        <input
-                          checked={selectedCategories.includes(cat)}
-                          onChange={() => handleCategoryChange(cat)}
-                          className="form-checkbox bg-[#201f1f] border-white/10 text-[#bb86fc] focus:ring-[#bb86fc] rounded cursor-pointer"
-                          type="checkbox"
-                        />
-                        <span className="text-sm text-[#e5e2e1] group-hover:text-[#bb86fc] transition-colors">
-                          {cat}
-                        </span>
-                      </label>
-                    </li>
-                  ))}
-                </ul>
+            <div className="glass-panel rounded-2xl p-6 border border-white/5">
+              <div className="flex items-center space-x-2.5 mb-6">
+                <SlidersHorizontal className="text-[#bb86fc]" size={18} />
+                <h3 className="font-bold text-base tracking-wide font-sans">Affiner la Recherche</h3>
               </div>
 
-              {/* Constructeurs JDM */}
-              <div className="pt-5 border-t border-white/5">
-                <h4 className="text-[11px] font-bold text-[#cdc3d4]/50 uppercase tracking-widest mb-3">Marque / Constructeur</h4>
-                <div className="flex flex-wrap gap-2">
-                  {['Nissan', 'Toyota', 'Honda', 'Mazda', 'HKS', 'Mugen'].map((brand) => (
-                    <button
-                      key={brand}
-                      onClick={() => handleBrandSelect(brand)}
-                      className={`px-3.5 py-1.5 rounded-full border transition-all font-mono text-xs cursor-pointer ${selectedBrand === brand
+              <div className="space-y-6">
+
+                {/* Choix des Catégories */}
+                <div>
+                  <h4 className="text-[11px] font-bold text-[#cdc3d4]/50 uppercase tracking-widest mb-3">Catégories</h4>
+                  <ul className="space-y-2.5">
+                    {['Voitures JDM', 'Pièces Performance', 'Accessoires'].map((cat) => (
+                      <li key={cat}>
+                        <label className="flex items-center gap-3 cursor-pointer group">
+                          <input
+                            checked={selectedCategories.includes(cat)}
+                            onChange={() => handleCategoryChange(cat)}
+                            className="form-checkbox bg-[#201f1f] border-white/10 text-[#bb86fc] focus:ring-[#bb86fc] rounded cursor-pointer"
+                            type="checkbox"
+                          />
+                          <span className="text-sm text-[#e5e2e1] group-hover:text-[#bb86fc] transition-colors">
+                            {cat}
+                          </span>
+                        </label>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Constructeurs JDM */}
+                <div className="pt-5 border-t border-white/5">
+                  <h4 className="text-[11px] font-bold text-[#cdc3d4]/50 uppercase tracking-widest mb-3">Marque / Constructeur</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {['Nissan', 'Toyota', 'Honda', 'Mazda', 'HKS', 'Mugen'].map((brand) => (
+                      <button
+                        key={brand}
+                        onClick={() => handleBrandSelect(brand)}
+                        className={`px-3.5 py-1.5 rounded-full border transition-all font-mono text-xs cursor-pointer ${selectedBrand === brand
                           ? 'border-[#bb86fc] text-[#bb86fc] bg-[#bb86fc]/10 shadow-[0_0_10px_rgba(187,134,252,0.25)]'
                           : 'border-white/10 text-[#cdc3d4] hover:border-[#bb86fc]/50 hover:text-[#bb86fc]'
-                        }`}
-                    >
-                      {brand}
-                    </button>
-                  ))}
+                          }`}
+                      >
+                        {brand}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Favoris Uniquement */}
-              <div className="pt-4 mt-4 border-t border-white/5">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    checked={showOnlyFavorites}
-                    onChange={() => setShowOnlyFavorites(!showOnlyFavorites)}
-                    className="form-checkbox bg-[#201f1f] border-white/10 text-[#ffb2bc] focus:ring-[#ffb2bc] rounded cursor-pointer"
-                    type="checkbox"
-                  />
-                  <span className="text-sm text-[#e5e2e1] group-hover:text-[#ffb2bc] transition-colors flex items-center gap-1.5">
-                    <Heart size={14} className={showOnlyFavorites ? "fill-[#ffb2bc] text-[#ffb2bc]" : "text-[#cdc3d4]"} />
-                    Favoris uniquement
-                  </span>
-                </label>
-              </div>
-
-              {/* Bloc de Statut Réseau */}
-              <div className="pt-6 border-t border-white/5 bg-[#1c1b1b]/30 p-4 rounded-xl">
-                <div className="flex items-center space-x-2 text-[#ffb2bc] mb-2">
-                  <Zap size={14} />
-                  <span className="text-xs font-bold uppercase tracking-wider">Syndicat Hub</span>
+                {/* Favoris Uniquement */}
+                <div className="pt-4 mt-4 border-t border-white/5">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      checked={showOnlyFavorites}
+                      onChange={() => setShowOnlyFavorites(!showOnlyFavorites)}
+                      className="form-checkbox bg-[#201f1f] border-white/10 text-[#ffb2bc] focus:ring-[#ffb2bc] rounded cursor-pointer"
+                      type="checkbox"
+                    />
+                    <span className="text-sm text-[#e5e2e1] group-hover:text-[#ffb2bc] transition-colors flex items-center gap-1.5">
+                      <Heart size={14} className={showOnlyFavorites ? "fill-[#ffb2bc] text-[#ffb2bc]" : "text-[#cdc3d4]"} />
+                      Favoris uniquement
+                    </span>
+                  </label>
                 </div>
-                <p className="text-[11px] text-[#cdc3d4]/65 leading-relaxed font-mono">
-                  Base de données active (MAMP OK). Flux d'enchères connecté. Système d'entiercement sécurisé.
+
+                {/* Bloc de Statut Réseau */}
+                <div className="pt-6 border-t border-white/5 bg-[#1c1b1b]/30 p-4 rounded-xl">
+                  <div className="flex items-center space-x-2 text-[#ffb2bc] mb-2">
+                    <Zap size={14} />
+                    <span className="text-xs font-bold uppercase tracking-wider">Syndicat Hub</span>
+                  </div>
+                  <p className="text-[11px] text-[#cdc3d4]/65 leading-relaxed font-mono">
+                    Base de données active (MAMP OK). Flux d'enchères connecté. Système d'entiercement sécurisé.
+                  </p>
+                </div>
+
+              </div>
+            </div>
+          </aside>
+
+          {/* Grille du Catalogue Produits */}
+          <section className="col-span-4 lg:col-span-9 space-y-6">
+
+            {/* Bannière Modérateur Admin */}
+            {user?.role === 'admin' && (
+              <div className="bg-[#ffb2bc]/5 border border-[#ffb2bc]/20 rounded-xl p-4 flex items-center justify-between font-mono text-xs text-[#ffb2bc] shadow-[0_0_15px_rgba(255,178,188,0.05)] animate-in fade-in duration-300 relative z-10">
+                <div className="flex items-center gap-2.5">
+                  <Shield size={16} />
+                  <span><strong>Mode Modérateur Actif</strong> — Droits de modération globale et suppression d'annonces activés.</span>
+                </div>
+                <span className="text-[9px] bg-[#ffb2bc]/10 px-2 py-0.5 rounded uppercase tracking-wider font-bold">Admin Console</span>
+              </div>
+            )}
+
+            {/* En-tête de section */}
+            <div className="flex justify-between items-end border-b border-white/5 pb-4">
+              <div>
+                <div className="inline-flex items-center space-x-2.5 bg-[#7e273b]/20 border border-[#ffb2bc]/30 px-3 py-1 rounded-full text-xs text-[#ffb2bc] mb-3">
+                  <Compass size={13} className="animate-spin" style={{ animationDuration: '6s' }} />
+                  <span>Marché du Syndicat Tokyo Drift</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#e5e2e1] uppercase">
+                  Performance Légendaire
+                </h1>
+                <p className="text-xs text-[#cdc3d4] mt-1 font-mono">
+                  {filteredProducts.length} légendes mécaniques vérifiées sous notre charte.
                 </p>
               </div>
 
-            </div>
-          </div>
-        </aside>
-
-        {/* Grille du Catalogue Produits */}
-        <section className="col-span-4 lg:col-span-9 space-y-6">
-
-          {/* Bannière Modérateur Admin */}
-          {user?.role === 'admin' && (
-            <div className="bg-[#ffb2bc]/5 border border-[#ffb2bc]/20 rounded-xl p-4 flex items-center justify-between font-mono text-xs text-[#ffb2bc] shadow-[0_0_15px_rgba(255,178,188,0.05)] animate-in fade-in duration-300 relative z-10">
-              <div className="flex items-center gap-2.5">
-                <Shield size={16} />
-                <span><strong>Mode Modérateur Actif</strong> — Droits de modération globale et suppression d'annonces activés.</span>
-              </div>
-              <span className="text-[9px] bg-[#ffb2bc]/10 px-2 py-0.5 rounded uppercase tracking-wider font-bold">Admin Console</span>
-            </div>
-          )}
-
-          {/* En-tête de section */}
-          <div className="flex justify-between items-end border-b border-white/5 pb-4">
-            <div>
-              <div className="inline-flex items-center space-x-2.5 bg-[#7e273b]/20 border border-[#ffb2bc]/30 px-3 py-1 rounded-full text-xs text-[#ffb2bc] mb-3">
-                <Compass size={13} className="animate-spin" style={{ animationDuration: '6s' }} />
-                <span>Marché du Syndicat Tokyo Drift</span>
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#e5e2e1] uppercase">
-                Performance Légendaire
-              </h1>
-              <p className="text-xs text-[#cdc3d4] mt-1 font-mono">
-                {filteredProducts.length} légendes mécaniques vérifiées sous notre charte.
-              </p>
-            </div>
-
-            {/* Bascule Grille / Liste */}
-            <div className="hidden sm:flex gap-2">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded border cursor-pointer transition-all ${viewMode === 'grid'
-                    ? 'glass-panel text-primary border-primary neon-glow-primary'
-                    : 'glass-panel border-white/15 text-[#cdc3d4] hover:text-[#e5e2e1]'
-                  }`}
-              >
-                <Grid size={16} />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded border cursor-pointer transition-all ${viewMode === 'list'
-                    ? 'glass-panel text-primary border-primary neon-glow-primary'
-                    : 'glass-panel border-white/15 text-[#cdc3d4] hover:text-[#e5e2e1]'
-                  }`}
-              >
-                <List size={16} />
-              </button>
-            </div>
-          </div>
-
-          {/* Sélecteur de type de vente (Tabs Horizontaux) */}
-          <div className="flex flex-wrap gap-2 p-1 bg-[#1c1b1b]/80 border border-white/5 rounded-xl max-w-2xl">
-            {[
-              { id: 'all', label: 'Tout afficher', icon: Compass },
-              { id: 'auction', label: 'Enchères en direct', icon: Timer },
-              { id: 'negotiation', label: 'Négociations', icon: MessageSquare },
-              { id: 'direct', label: 'Achat direct', icon: ShoppingCart },
-            ].map((tab) => {
-              const TabIcon = tab.icon;
-              return (
+              {/* Bascule Grille / Liste */}
+              <div className="hidden sm:flex gap-2">
                 <button
-                  key={tab.id}
-                  onClick={() => setSalesFilter(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${salesFilter === tab.id
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded border cursor-pointer transition-all ${viewMode === 'grid'
+                    ? 'glass-panel text-primary border-primary neon-glow-primary'
+                    : 'glass-panel border-white/15 text-[#cdc3d4] hover:text-[#e5e2e1]'
+                    }`}
+                >
+                  <Grid size={16} />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded border cursor-pointer transition-all ${viewMode === 'list'
+                    ? 'glass-panel text-primary border-primary neon-glow-primary'
+                    : 'glass-panel border-white/15 text-[#cdc3d4] hover:text-[#e5e2e1]'
+                    }`}
+                >
+                  <List size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Sélecteur de type de vente (Tabs Horizontaux) */}
+            <div className="flex flex-wrap gap-2 p-1 bg-[#1c1b1b]/80 border border-white/5 rounded-xl max-w-2xl">
+              {[
+                { id: 'all', label: 'Tout afficher', icon: Compass },
+                { id: 'auction', label: 'Enchères en direct', icon: Timer },
+                { id: 'negotiation', label: 'Négociations', icon: MessageSquare },
+                { id: 'direct', label: 'Achat direct', icon: ShoppingCart },
+              ].map((tab) => {
+                const TabIcon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setSalesFilter(tab.id)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${salesFilter === tab.id
                       ? 'bg-[#bb86fc] text-[#460283] shadow-[0_0_12px_rgba(187,134,252,0.3)]'
                       : 'text-[#cdc3d4] hover:text-[#e5e2e1] hover:bg-white/5'
-                    }`}
-                >
-                  <TabIcon size={13} />
-                  <span>{tab.label}</span>
-                </button>
-              );
-            })}
-          </div>
+                      }`}
+                  >
+                    <TabIcon size={13} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* Grille ou Liste de Cartes */}
-          <div className={viewMode === 'grid'
-            ? "grid grid-cols-1 md:grid-cols-2 gap-6"
-            : "space-y-4"
-          }>
-            {filteredProducts.length > 0 ? (
-              filteredProducts.map((product) => (
-                <div
-                  key={product.id}
-                  className={`glass-panel rounded-2xl overflow-hidden group hover:neon-glow-primary transition-all duration-300 border border-white/5 flex flex-col ${viewMode === 'list' ? 'md:flex-row' : ''
-                    }`}
-                >
-                  {/* Image de la voiture ou pièce */}
-                  <div className={`relative overflow-hidden bg-[#2a2a2a] ${viewMode === 'list' ? 'h-48 md:w-72 md:h-full flex-shrink-0' : 'h-56 w-full'
-                    }`}>
-                    <img
-                      alt={product.model}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85"
-                      src={product.image}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-[#131313]/20 to-transparent"></div>
-
-                    {/* Bouton de mise en favori flottant */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFavorite(product.id);
-                      }}
-                      className="absolute top-4 right-4 p-2 rounded-full glass-panel border border-white/20 hover:scale-110 active:scale-95 transition-all text-white cursor-pointer hover:bg-white/10 z-10"
-                      title={favorites.includes(product.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
-                    >
-                      <Heart
-                        size={14}
-                        className={favorites.includes(product.id) ? "fill-[#ffb2bc] text-[#ffb2bc] drop-shadow-[0_0_8px_rgba(255,178,188,0.6)]" : "text-white"}
+            {/* Grille ou Liste de Cartes */}
+            <div className={viewMode === 'grid'
+              ? "grid grid-cols-1 md:grid-cols-2 gap-6"
+              : "space-y-4"
+            }>
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                  <div
+                    key={product.id}
+                    className={`glass-panel rounded-2xl overflow-hidden group hover:neon-glow-primary transition-all duration-300 border border-white/5 flex flex-col ${viewMode === 'list' ? 'md:flex-row' : ''
+                      }`}
+                  >
+                    {/* Image de la voiture ou pièce */}
+                    <div className={`relative overflow-hidden bg-[#2a2a2a] ${viewMode === 'list' ? 'h-48 md:w-72 md:h-full flex-shrink-0' : 'h-56 w-full'
+                      }`}>
+                      <img
+                        alt={product.model}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-85"
+                        src={product.image}
                       />
-                    </button>
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#131313] via-[#131313]/20 to-transparent"></div>
 
-                    {canModerate && (
+                      {/* Bouton de mise en favori flottant */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteProduct(product.id);
+                          toggleFavorite(product.id);
                         }}
-                        className="absolute top-4 right-16 p-2 rounded-full bg-red-500/80 border border-red-200/30 hover:scale-110 active:scale-95 transition-all text-white cursor-pointer z-10"
-                        title="Supprimer l'annonce"
+                        className="absolute top-4 right-4 p-2 rounded-full glass-panel border border-white/20 hover:scale-110 active:scale-95 transition-all text-white cursor-pointer hover:bg-white/10 z-10"
+                        title={favorites.includes(product.id) ? "Retirer des favoris" : "Ajouter aux favoris"}
                       >
-                        <X size={14} />
+                        <Heart
+                          size={14}
+                          className={favorites.includes(product.id) ? "fill-[#ffb2bc] text-[#ffb2bc] drop-shadow-[0_0_8px_rgba(255,178,188,0.6)]" : "text-white"}
+                        />
                       </button>
-                    )}
 
-                    {/* Tags Flottants */}
-                    <div className="absolute top-4 left-4 flex flex-wrap gap-1.5">
-                      {product.verified && (
-                        <span className="bg-[#bb86fc] text-[#460283] text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-[0_0_8px_rgba(187,134,252,0.4)] flex items-center gap-1">
-                          <Check size={9} strokeWidth={3} /> Vérifié
-                        </span>
+                      {canModerate && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteProduct(product.id);
+                          }}
+                          className="absolute top-4 right-16 p-2 rounded-full bg-red-500/80 border border-red-200/30 hover:scale-110 active:scale-95 transition-all text-white cursor-pointer z-10"
+                          title="Supprimer l'annonce"
+                        >
+                          <X size={14} />
+                        </button>
                       )}
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-white/10 ${product.saleType === 'auction'
+
+                      {/* Tags Flottants */}
+                      <div className="absolute top-4 left-4 flex flex-wrap gap-1.5">
+                        {product.verified && (
+                          <span className="bg-[#bb86fc] text-[#460283] text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow-[0_0_8px_rgba(187,134,252,0.4)] flex items-center gap-1">
+                            <Check size={9} strokeWidth={3} /> Vérifié
+                          </span>
+                        )}
+                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-white/10 ${product.saleType === 'auction'
                           ? 'bg-secondary-dark/45 text-[#ffb2bc] border-[#ffb2bc]/30 shadow-[0_0_8px_rgba(255,178,188,0.2)]'
                           : product.saleType === 'negotiation'
                             ? 'bg-tertiary/10 text-tertiary border-tertiary/20 shadow-[0_0_8px_rgba(23,222,202,0.2)]'
                             : 'bg-[#1c1b1b] text-zinc-300 border-zinc-700/50'
-                        }`}>
-                        {product.status}
-                      </span>
+                          }`}>
+                          {product.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Corps de la Fiche */}
+                    <div className="p-5 flex-grow flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <span className="text-[#ffb2bc] text-[10px] font-mono uppercase tracking-widest">{product.brand}</span>
+                            <h3 className="font-extrabold text-base md:text-lg group-hover:text-primary transition-colors text-zinc-100">
+                              {product.year} {product.model}
+                            </h3>
+                          </div>
+                          {product.category === 'Voitures JDM' && (
+                            <div className="text-right">
+                              <span className="text-[9px] text-[#cdc3d4]/40 font-mono block">Valeur Actuelle</span>
+                              <span className="font-extrabold text-[#bb86fc] tracking-tight font-mono">
+                                {product.price.toLocaleString()} €
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Caractéristiques techniques */}
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 my-4 border-t border-b border-white/5 py-3 font-mono text-[11px] text-[#cdc3d4]/70">
+                          <div>
+                            <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">CHÂSSIS / GRADE</span>
+                            <span className="font-semibold text-zinc-200">{product.chassis}</span>
+                          </div>
+                          {product.mileage ? (
+                            <div>
+                              <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">KILOMÉTRAGE</span>
+                              <span className="font-semibold text-zinc-200">{product.mileage.toLocaleString()} km</span>
+                            </div>
+                          ) : (
+                            <div>
+                              <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">STATUT</span>
+                              <span className="font-semibold text-[#17deca]">{product.status}</span>
+                            </div>
+                          )}
+                          <div>
+                            <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">MOTEUR</span>
+                            <span className="font-semibold text-zinc-200">{product.engine}</span>
+                          </div>
+                          <div>
+                            <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">PUISSANCE / CIBLE</span>
+                            <span className="font-semibold text-zinc-200">{product.power}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {canModerate && (
+                        <div className="flex gap-2 mb-3">
+                          <button
+                            onClick={() => handleOpenEditProduct(product)}
+                            className="flex items-center justify-center gap-1.5 border border-primary/40 text-primary hover:bg-primary/10 rounded-lg py-2 px-3 text-[10px] font-bold uppercase tracking-wider"
+                          >
+                            <Pencil size={12} />
+                            Modifier
+                          </button>
+                          <span className="text-[10px] font-mono text-[#cdc3d4]/50 self-center">Prix verrouille</span>
+                        </div>
+                      )}
+
+                      {/* Bloc d'Actions interactives */}
+                      <div className="flex flex-col justify-between h-full">
+                        <div className="flex justify-between items-center gap-3 mt-4 pt-1">
+                          {product.category !== 'Voitures JDM' ? (
+                            <>
+                              <div className="font-extrabold text-base md:text-lg text-zinc-100 font-mono">
+                                {product.price.toLocaleString()} €
+                              </div>
+                              <button
+                                onClick={() => handleAddToCart(product)}
+                                className="bg-white/10 hover:bg-white/20 text-[#e5e2e1] text-xs font-semibold px-4.5 py-2.5 rounded-lg transition-all cursor-pointer active:scale-95"
+                              >
+                                Ajouter au Panier
+                              </button>
+                            </>
+                          ) : product.status === 'Enchère en Cours' ? (
+                            <>
+                              <div className="flex items-center space-x-1.5 text-xs text-[#ffb2bc] font-semibold animate-pulse">
+                                <Timer size={14} />
+                                <span>6j 23h restants</span>
+                              </div>
+                              <button
+                                onClick={() => onSelectAuction(product)}
+                                className="neon-border-btn text-xs font-bold px-6 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer active:scale-95"
+                              >
+                                Placer une Offre
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex items-center space-x-1.5 text-xs text-[#17deca] font-semibold">
+                                <Landmark size={14} />
+                                <span>Entiercement Vérifié</span>
+                              </div>
+                              <button
+                                onClick={() => setPopup({ title: "Négociation", message: `Négociation ouverte pour la ${product.model}. Une fois le backend connecté par Nicolas, cette action enverra une offre en base.`, type: "info" })}
+                                className="bg-white/10 hover:bg-[#ffb2bc]/15 border border-white/10 hover:border-[#ffb2bc]/30 text-[#e5e2e1] text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95"
+                              >
+                                Négocier le Prix
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Corps de la Fiche */}
-                  <div className="p-5 flex-grow flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <span className="text-[#ffb2bc] text-[10px] font-mono uppercase tracking-widest">{product.brand}</span>
-                          <h3 className="font-extrabold text-base md:text-lg group-hover:text-primary transition-colors text-zinc-100">
-                            {product.year} {product.model}
-                          </h3>
-                        </div>
-                        {product.category === 'Voitures JDM' && (
-                          <div className="text-right">
-                            <span className="text-[9px] text-[#cdc3d4]/40 font-mono block">Valeur Actuelle</span>
-                            <span className="font-extrabold text-[#bb86fc] tracking-tight font-mono">
-                              {product.price.toLocaleString()} €
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Caractéristiques techniques */}
-                      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 my-4 border-t border-b border-white/5 py-3 font-mono text-[11px] text-[#cdc3d4]/70">
-                        <div>
-                          <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">CHÂSSIS / GRADE</span>
-                          <span className="font-semibold text-zinc-200">{product.chassis}</span>
-                        </div>
-                        {product.mileage ? (
-                          <div>
-                            <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">KILOMÉTRAGE</span>
-                            <span className="font-semibold text-zinc-200">{product.mileage.toLocaleString()} km</span>
-                          </div>
-                        ) : (
-                          <div>
-                            <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">STATUT</span>
-                            <span className="font-semibold text-[#17deca]">{product.status}</span>
-                          </div>
-                        )}
-                        <div>
-                          <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">MOTEUR</span>
-                          <span className="font-semibold text-zinc-200">{product.engine}</span>
-                        </div>
-                        <div>
-                          <span className="text-[#cdc3d4]/30 block text-[9px] uppercase tracking-wider">PUISSANCE / CIBLE</span>
-                          <span className="font-semibold text-zinc-200">{product.power}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {canModerate && (
-                      <div className="flex gap-2 mb-3">
-                        <button
-                          onClick={() => handleOpenEditProduct(product)}
-                          className="flex items-center justify-center gap-1.5 border border-primary/40 text-primary hover:bg-primary/10 rounded-lg py-2 px-3 text-[10px] font-bold uppercase tracking-wider"
-                        >
-                          <Pencil size={12} />
-                          Modifier
-                        </button>
-                        <span className="text-[10px] font-mono text-[#cdc3d4]/50 self-center">Prix verrouille</span>
-                      </div>
-                    )}
-
-                    {/* Bloc d'Actions interactives */}
-                    <div className="flex flex-col justify-between h-full">
-                      <div className="flex justify-between items-center gap-3 mt-4 pt-1">
-                        {product.category !== 'Voitures JDM' ? (
-                          <>
-                            <div className="font-extrabold text-base md:text-lg text-zinc-100 font-mono">
-                              {product.price.toLocaleString()} €
-                            </div>
-                            <button
-                              onClick={() => handleAddToCart(product)}
-                              className="bg-white/10 hover:bg-white/20 text-[#e5e2e1] text-xs font-semibold px-4.5 py-2.5 rounded-lg transition-all cursor-pointer active:scale-95"
-                            >
-                              Ajouter au Panier
-                            </button>
-                          </>
-                        ) : product.status === 'Enchère en Cours' ? (
-                          <>
-                            <div className="flex items-center space-x-1.5 text-xs text-[#ffb2bc] font-semibold animate-pulse">
-                              <Timer size={14} />
-                              <span>6j 23h restants</span>
-                            </div>
-                            <button
-                              onClick={() => onSelectAuction(product)}
-                              className="neon-border-btn text-xs font-bold px-6 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer active:scale-95"
-                            >
-                              Placer une Offre
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <div className="flex items-center space-x-1.5 text-xs text-[#17deca] font-semibold">
-                              <Landmark size={14} />
-                              <span>Entiercement Vérifié</span>
-                            </div>
-                            <button
-                              onClick={() => setPopup({ title: "Négociation", message: `Négociation ouverte pour la ${product.model}. Une fois le backend connecté par Nicolas, cette action enverra une offre en base.`, type: "info" })}
-                              className="bg-white/10 hover:bg-[#ffb2bc]/15 border border-white/10 hover:border-[#ffb2bc]/30 text-[#e5e2e1] text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95"
-                            >
-                              Négocier le Prix
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                ))
+              ) : (
+                <div className="col-span-full py-16 text-center glass-panel rounded-2xl border border-white/5">
+                  <p className="text-zinc-500 text-sm font-mono mb-2">Aucun bolide trouvé dans la base.</p>
+                  <button
+                    onClick={() => { setSearchQuery(''); setSelectedBrand(null); setSelectedCategories(['Voitures JDM', 'Pièces Performance', 'Accessoires']); }}
+                    className="text-[#bb86fc] text-xs font-semibold hover:underline"
+                  >
+                    Réinitialiser les filtres
+                  </button>
                 </div>
-              ))
-            ) : (
-              <div className="col-span-full py-16 text-center glass-panel rounded-2xl border border-white/5">
-                <p className="text-zinc-500 text-sm font-mono mb-2">Aucun bolide trouvé dans la base.</p>
+              )}
+            </div>
+
+            {/* Pagination Bouton */}
+            {filteredProducts.length > 0 && (
+              <div className="flex justify-center pt-8">
                 <button
-                  onClick={() => { setSearchQuery(''); setSelectedBrand(null); setSelectedCategories(['Voitures JDM', 'Pièces Performance', 'Accessoires']); }}
-                  className="text-[#bb86fc] text-xs font-semibold hover:underline"
+                  onClick={() => setPopup({ title: "Inventaire Chargé", message: "Inventaire complet chargé. Gabin ajoutera la pagination lors de l'intégration finale avec Célestin.", type: "info" })}
+                  className="neon-border-btn text-xs font-bold px-8 py-3 rounded-full uppercase tracking-widest text-[#e5e2e1] hover:text-[#bb86fc] cursor-pointer active:scale-95"
                 >
-                  Réinitialiser les filtres
+                  Charger plus de Véhicules
                 </button>
               </div>
             )}
-          </div>
 
-          {/* Pagination Bouton */}
-          {filteredProducts.length > 0 && (
-            <div className="flex justify-center pt-8">
-              <button
-                onClick={() => setPopup({ title: "Inventaire Chargé", message: "Inventaire complet chargé. Gabin ajoutera la pagination lors de l'intégration finale avec Célestin.", type: "info" })}
-                className="neon-border-btn text-xs font-bold px-8 py-3 rounded-full uppercase tracking-widest text-[#e5e2e1] hover:text-[#bb86fc] cursor-pointer active:scale-95"
-              >
-                Charger plus de Véhicules
-              </button>
-            </div>
-          )}
-
-          {/* Database Live Showcase */}
-          <ProductList />
-        </section>
-      </main>
+            {/* Database Live Showcase */}
+            <ProductList />
+          </section>
+        </main>
       ) : (
         <AdminWorkspace
           user={user}
@@ -1635,6 +1828,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
           onDeleteProduct={handleDeleteProduct}
           onOpenEdit={handleOpenEditProduct}
           onStartAdd={() => setAddingProduct(true)}
+          apiUrl={apiUrl}
         />
       )}
 
@@ -1739,7 +1933,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
           <div className="glass-panel border border-[#17deca]/20 rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl relative my-8">
             <span className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[#17deca] animate-pulse"></span>
             <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[#bb86fc] animate-pulse"></span>
-            
+
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#1c1b1b]/50">
               <div>
                 <h3 className="text-sm font-bold font-mono uppercase tracking-widest text-[#17deca] flex items-center gap-2">
@@ -1750,7 +1944,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                   Créez votre fiche produit sur mesure pour le Mercato Nova.
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setProposingListing(false)}
                 className="text-zinc-500 hover:text-white transition-colors cursor-pointer"
               >
@@ -1850,11 +2044,10 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                       key={t.id}
                       type="button"
                       onClick={() => setNewProposal(prev => ({ ...prev, saleType: t.id }))}
-                      className={`py-2 rounded-lg flex items-center justify-center cursor-pointer transition-all ${
-                        newProposal.saleType === t.id
+                      className={`py-2 rounded-lg flex items-center justify-center cursor-pointer transition-all ${newProposal.saleType === t.id
                           ? 'bg-[#1c1b1b] border border-white/10 text-white font-black shadow-[0_0_10px_rgba(23,222,202,0.1)]'
                           : 'text-[#cdc3d4]/50 hover:text-white'
-                      }`}
+                        }`}
                     >
                       {t.label}
                     </button>
@@ -1876,9 +2069,8 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                       key={idx}
                       type="button"
                       onClick={() => setNewProposal(prev => ({ ...prev, image: img.url }))}
-                      className={`relative rounded-lg overflow-hidden border transition-all h-14 ${
-                        newProposal.image === img.url ? 'border-[#17deca] ring-2 ring-[#17deca]/20 scale-95' : 'border-white/10 hover:border-white/30'
-                      }`}
+                      className={`relative rounded-lg overflow-hidden border transition-all h-14 ${newProposal.image === img.url ? 'border-[#17deca] ring-2 ring-[#17deca]/20 scale-95' : 'border-white/10 hover:border-white/30'
+                        }`}
                     >
                       <img src={img.url} alt={img.label} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-[#0e0e0e]/40 flex items-center justify-center">
@@ -2002,15 +2194,15 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
           <div className={`glass-panel w-full max-w-md rounded-2xl border p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200 relative ${popup.type === 'warning' ? 'border-[#ffb2bc]/30 shadow-[0_0_50px_rgba(255,178,188,0.2)]' : 'border-[#bb86fc]/30 shadow-[0_0_50px_rgba(187,134,252,0.2)]'}`}>
             <span className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[#bb86fc] animate-pulse"></span>
             <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[#ffb2bc] animate-pulse"></span>
-            
+
             <div className="text-center space-y-4">
               <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto border shadow-[0_0_15px_rgba(255,255,255,0.05)] ${popup.type === 'warning' ? 'bg-[#ffb2bc]/10 text-[#ffb2bc] border-[#ffb2bc]/20 shadow-[0_0_15px_rgba(255,178,188,0.2)]' : 'bg-[#bb86fc]/10 text-[#bb86fc] border-[#bb86fc]/20 shadow-[0_0_15px_rgba(187,134,252,0.2)]'}`}>
                 {popup.type === 'warning' ? <AlertTriangle size={24} /> : <Sparkles size={24} />}
               </div>
               <h3 className="text-lg font-black italic tracking-tighter uppercase text-white font-headline-md">{popup.title}</h3>
               <p className="text-xs text-[#cdc3d4]/80 font-mono leading-relaxed">{popup.message}</p>
-              
-              <button 
+
+              <button
                 onClick={() => {
                   setPopup(null);
                   if (popup.onClose) popup.onClose();
@@ -2030,22 +2222,22 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
           <div className="glass-panel w-full max-w-md rounded-2xl border border-[#ffb2bc]/30 p-8 shadow-[0_0_50px_rgba(255,178,188,0.25)] animate-in fade-in zoom-in-95 duration-200 relative">
             <span className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[#bb86fc] animate-pulse"></span>
             <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[#ffb2bc] animate-pulse"></span>
-            
+
             <div className="text-center space-y-4">
               <div className="w-12 h-12 rounded-full bg-[#ffb2bc]/10 flex items-center justify-center mx-auto text-[#ffb2bc] border border-[#ffb2bc]/20 shadow-[0_0_15px_rgba(255,178,188,0.2)]">
                 <AlertTriangle size={24} />
               </div>
               <h3 className="text-lg font-black italic tracking-tighter uppercase text-white font-headline-md">{confirmDialog.title}</h3>
               <p className="text-xs text-zinc-300 font-mono leading-relaxed">{confirmDialog.message}</p>
-              
+
               <div className="flex gap-4 mt-6">
-                <button 
+                <button
                   onClick={() => setConfirmDialog(null)}
                   className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-zinc-300 rounded-lg border border-white/10 font-bold text-xs uppercase tracking-wider transition-colors"
                 >
                   Annuler
                 </button>
-                <button 
+                <button
                   onClick={confirmDialog.onConfirm}
                   className="flex-1 py-3 bg-gradient-to-r from-[#bb86fc] to-[#ffb2bc] text-[#460283] hover:brightness-110 font-black text-xs uppercase tracking-wider rounded-lg transition-all"
                 >

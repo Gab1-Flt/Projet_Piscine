@@ -6,6 +6,7 @@ import Auction from './views/Auction';
 import Preparation from './views/Preparation';
 import Checkout from './views/Checkout';
 import Account from './views/Account';
+import Messages from './views/Messages';
 import { Sparkles, AlertTriangle } from 'lucide-react';
 import { mockUsers } from './data/mockData';
 
@@ -200,6 +201,15 @@ function App() {
           checkoutData={checkoutData}
           onClearCart={handleClearCart}
           onNavigate={handleNavigate}
+          user={user}
+          apiUrl={apiUrl}
+        />
+      ) : activeView === 'messages' ? (
+        <Messages
+          user={user}
+          apiUrl={apiUrl}
+          onNavigate={handleNavigate}
+          onLogout={handleLogout}
         />
       ) : activeView === 'account' ? (
         <Account
