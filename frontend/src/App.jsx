@@ -7,6 +7,7 @@ import Preparation from './views/Preparation';
 import Checkout from './views/Checkout';
 import Account from './views/Account';
 import Messages from './views/Messages';
+import Negotiation from './views/Negotiation';
 import { Sparkles, AlertTriangle } from 'lucide-react';
 import { mockUsers } from './data/mockData';
 
@@ -30,6 +31,7 @@ function App() {
   // Navigation réactive entre catalogue, liste des enchères, préparation, et paiement
   const [currentView, setCurrentView] = useState('home'); 
   const [activeAuctionProduct, setActiveAuctionProduct] = useState(null);
+  const [activeNegotiationId, setActiveNegotiationId] = useState(null);
   const [popup, setPopup] = useState(null); // { title: string, message: string, onClose?: () => void }
 
   // État du panier d'achat synchronisé globalement
@@ -62,7 +64,13 @@ function App() {
   // Gestionnaire de navigation enrichi avec passage de paramètres
   const handleNavigate = (view, data = null) => {
     if (data) {
-      setCheckoutData(data);
+      if (view === 'negotiation') {
+        setActiveNegotiationId(data);
+      } else if (view === 'auction') {
+        setActiveAuctionProduct(data);
+      } else {
+        setCheckoutData(data);
+      }
     }
     setCurrentView(view);
   };
@@ -224,6 +232,22 @@ function App() {
           onNavigate={handleNavigate}
           onLogout={handleLogout}
           apiUrl={apiUrl}
+        />
+      ) : activeView === 'negotiation' ? (
+        <Negotiation
+          user={user}
+          negotiationId={activeNegotiationId}
+          apiUrl={apiUrl}
+          onNavigate={(view, data = null) => {
+            if (view === 'checkout') {
+              handleNavigate(view, data);
+            } else {
+              if (view === 'negotiation' && data) {
+                setActiveNegotiationId(data);
+              }
+              setCurrentView(view);
+            }
+          }}
         />
       ) : (
         <Auction 

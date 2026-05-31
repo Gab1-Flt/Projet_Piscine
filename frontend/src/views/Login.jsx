@@ -4,8 +4,8 @@ import { Mail, Lock, ArrowRight, Zap, Shield, User, Sparkles, Eye, EyeOff, Cpu }
 function Login({ onLogin, onBack, apiUrl }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [role, setRole] = useState('buyer'); // 'buyer', 'seller' ou 'admin'
-  const [email, setEmail] = useState('buyer@mercatonova.com');
-  const [password, setPassword] = useState('password123'); // seed data uses password123 as default
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // États pour l'inscription
@@ -14,19 +14,21 @@ function Login({ onLogin, onBack, apiUrl }) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [popup, setPopup] = useState(null);
 
-  // Met à jour les credentials de test quand le rôle change (seulement en mode connexion)
+  // Met à jour le rôle
   const handleRoleChange = (selectedRole) => {
     setRole(selectedRole);
-    if (!isRegistering) {
-      if (selectedRole === 'admin') {
-        setEmail('gabin@mercatonova.com');
-      } else if (selectedRole === 'seller') {
-        setEmail('celestin@mercatonova.com');
-      } else {
-        setEmail('takumi.fujiwara@akina.jp');
-      }
-      setPassword('password123');
+  };
+
+  // Remplir les identifiants de test pour le rôle actif
+  const handleAutofillTest = () => {
+    if (role === 'admin') {
+      setEmail('gabin@mercatonova.com');
+    } else if (role === 'seller') {
+      setEmail('celestin@mercatonova.com');
+    } else {
+      setEmail('takumi.fujiwara@akina.jp');
     }
+    setPassword('password123');
   };
 
   const handleSubmit = async (e) => {
@@ -195,6 +197,19 @@ function Login({ onLogin, onBack, apiUrl }) {
               <span>Admin</span>
             </button>
           </div>
+
+          {!isRegistering && (
+            <div className="flex justify-end mb-4 -mt-2">
+              <button
+                type="button"
+                onClick={handleAutofillTest}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[9px] font-bold tracking-wider font-mono uppercase bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#bb86fc]/40 text-[#cdc3d4]/80 hover:text-white transition-all active:scale-95 cursor-pointer"
+              >
+                <Zap size={11} className="text-[#bb86fc] animate-pulse" />
+                <span>Remplir identifiants test ({role === 'buyer' ? 'Client' : role === 'seller' ? 'Vendeur' : 'Admin'})</span>
+              </button>
+            </div>
+          )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">

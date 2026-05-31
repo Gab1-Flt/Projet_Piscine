@@ -1,178 +1,83 @@
-# Mercato Nova
+# Mercato Nova - Projet Piscine ECE
 
-Mercato Nova est une maquette de plateforme de vente JDM developpee pour le projet piscine ECE ING2.
-Le site permet de consulter un catalogue de voitures et pieces, puis de gerer plusieurs modes de transaction :
-achat direct, enchere et negociation.
+## Lien du Repository Github
 
-## Repartition du projet
+ [https://github.com/ECE-Groupe-1/projet-piscine](https://github.com/ECE-Groupe-1/projet-piscine)
 
-- Gabin : interface web du menu principal, catalogue, enchere, parcours marketplace.
-- Nicolas : interface web admin/directeur, user management, acces par roles.
-- Paul : interface web vendeur, gestion des ventes.
-- Celestin : base de donnees et implementation backend.
+**Mercato Nova** est une plateforme d'e-commerce spécialisée dans l'import de véhicules et pièces JDM (Japanese Domestic Market). Ce projet propose une architecture complète avec un front-end en **React** et un back-end en **PHP / MySQL**, intégrant des fonctionnalités d'achat direct, d'enchères et de négociation en temps réel.
 
-## Stack technique
+---
 
-- Frontend : React, Vite, Tailwind CSS, JavaScript.
-- Backend : PHP pur, structure REST API.
-- Base de donnees : MySQL, script d'initialisation dans `database/init.sql`.
-- UI : theme sombre neon, composants avec `lucide-react`.
+## 1. Installation du Serveur (Backend)
 
-## Structure actuelle
+Pour faire fonctionner la partie serveur et la base de données, vous avez besoin de **MAMP** (ou XAMPP / WAMP).
 
-```txt
-Projet_Piscine/
-├── backend/
-│   ├── config/database.php
-│   ├── api/
-│   ├── controllers/
-│   ├── models/
-│   ├── uploads/
-│   └── index.php
-├── database/
-│   └── init.sql
-└── frontend/
-    ├── src/
-    │   ├── App.jsx
-    │   ├── data/mockData.js
-    │   ├── views/Home.jsx
-    │   ├── views/Login.jsx
-    │   └── index.css
-    ├── package.json
-    └── vite.config.js
-```
+1. Assurez-vous d'avoir installé MAMP.
+2. Déplacez **l'intégralité de ce dossier** (`Projet_Piscine`) dans le dossier racine de votre serveur web :
+   - Sous Windows (MAMP) : `C:\MAMP\htdocs\Projet_Piscine`
+   - Sous Mac (MAMP) : `/Applications/MAMP/htdocs/Projet_Piscine`
+3. Ouvrez MAMP et **démarrez les serveurs Apache et MySQL**.
 
-## Nouveautes ajoutees
+---
 
-### Acces invite
+## 2. Configuration de la Base de Données
 
-Quand l'utilisateur arrive sur le site, il n'est pas connecte.
-Il peut consulter librement le catalogue, les voitures, les pieces et les informations visibles.
+Le projet est livré avec un script SQL complet pour générer l'architecture et les données de test.
 
-Les actions suivantes demandent une connexion :
+1. Allez sur **phpMyAdmin** depuis votre navigateur (généralement `http://localhost/phpMyAdmin` ou `http://localhost:8888/phpMyAdmin`).
+2. Allez dans l'onglet **Importer**.
+3. Importez le fichier situé dans `Projet_Piscine/database/init.sql` et exécutez-le.
+   *Note : Ce script crée automatiquement la base de données `mercato_nova`, les tables, et ajoute un jeu complet d'utilisateurs et de produits de test.*
 
-- acheter une piece ou une voiture ;
-- placer une enchere ;
-- negocier un prix ;
-- proposer une annonce au catalogue.
+---
 
-### Connexion et roles
+## 3. Lancement de l'Application (Frontend)
 
-La connexion passe par le bouton profil en haut a droite.
-La maquette utilise des faux comptes stockes dans `frontend/src/data/mockData.js`.
+L'interface utilisateur a été développée avec React et Vite. Assurez-vous d'avoir **Node.js** installé sur votre machine.
 
-Quatre niveaux d'acces sont geres :
+1. Ouvrez un terminal et naviguez dans le dossier `frontend` du projet :
+   ```bash
+   cd frontend
+   ```
+2. Installez les dépendances du projet :
+   ```bash
+   npm install
+   ```
+3. Démarrez le serveur de développement React :
+   ```bash
+   npm run dev
+   ```
+4. Ouvrez le lien affiché dans le terminal (généralement **http://localhost:5173**) dans votre navigateur web.
 
-- invite : consultation seule ;
-- utilisateur connecte : navigation, achat, enchere, negociation, proposition d'annonce ;
-- administrateur : moderation des annonces, gestion des comptes, suppression/modification/ajout de ventes ;
-- directeur : acces global, y compris informations des administrateurs, suppression des comptes et annonces.
+---
 
-### Interface administrateur
+## 4. Démarche de Test & Fonctionnalités
 
-L'administrateur garde l'interface normale du catalogue, mais dispose d'outils supplementaires :
+Pour explorer l'ensemble des fonctionnalités du site, utilisez l'icône de profil (en haut à droite de l'écran) pour basculer entre les différents types de comptes pré-configurés :
 
-- croix de suppression sur les annonces du catalogue ;
-- bouton `Modifier` sous chaque annonce ;
-- prix verrouille lors de la modification ;
-- bouton d'ajout de vente depuis la console admin ;
-- bloc d'acces rapide a la console admin dans le panneau lateral.
+### Comptes de test
+*Le mot de passe pour tous les comptes est le même (bien que simulé pour l'interface de test) : `password123`*
 
-La console admin contient :
+- **Client / Acheteur** : `takumi.fujiwara@akina.jp`
+- **Vendeur** : `celestin@mercatonova.com`
+- **Administrateur / Directeur** : `gabin@mercatonova.com`
 
-- statistiques de plateforme ;
-- file des annonces en attente ;
-- validation ou refus d'une annonce ;
-- verification des informations vendeur et criteres de carte d'identite ;
-- gestion des comptes utilisateurs ;
-- bannissement d'un utilisateur ;
-- suppression d'un compte.
+### Scénarios à tester pour la correction :
 
-### Interface directeur
+#### A. Le cycle de Négociation (Test Client + Vendeur)
+1. Connectez-vous en tant que **Vendeur (Célestin)**. Allez dans l'espace vendeur et créez une annonce pour un véhicule en sélectionnant l'option de vente "Négociation".
+2. Déconnectez-vous et connectez-vous en tant que **Client (Takumi)**.
+3. Trouvez l'annonce dans le catalogue, cliquez sur "Démarrer une négociation" et proposez un prix.
+4. Déconnectez-vous et reconnectez-vous en tant que **Vendeur (Célestin)**.
+5. Allez dans l'onglet **"Offres reçues"** du tableau de bord vendeur pour consulter l'offre et l'accepter, la refuser ou faire une contre-offre.
 
-Le directeur a un espace dedie avec des droits plus larges :
+#### B. Les Notifications en temps réel
+- Lors du scénario de négociation ci-dessus, observez **l'icône de la cloche** en haut à droite. Elle s'animera (avec une pastille rouge) dès qu'une action est effectuée.
+- Cliquez dessus pour lire la notification. Cette action marque la notification comme lue dans la base de données en temps réel !
 
-- acces aux comptes utilisateurs et administrateurs ;
-- acces aux donnees personnelles visibles dans la maquette ;
-- affichage d'information bancaire simulee, reservee au directeur ;
-- suppression des comptes ;
-- suppression et modification des annonces ;
-- validation des annonces en attente.
+#### C. Gestion d'Administration
+1. Connectez-vous en tant qu'**Administrateur (Gabin)**.
+2. Parcourez l'Espace Directeur : observez le journal d'audit interactif, les statistiques de ventes calculées sur la base de données, et l'historique des transactions.
+3. Depuis le catalogue, l'administrateur peut directement supprimer des annonces (l'action impacte instantanément la base de données).
 
-### Moderation des annonces
-
-Quand un utilisateur connecte propose une annonce, elle n'est pas publiee directement.
-Elle arrive dans la file de moderation admin/directeur.
-
-Un administrateur ou directeur peut ensuite :
-
-- accepter l'annonce, ce qui l'ajoute au catalogue ;
-- refuser l'annonce, ce qui la retire de la file ;
-- ne rien faire et la laisser en attente.
-
-### Gestion utilisateurs
-
-La gestion utilisateurs est simulee cote frontend pour la maquette.
-Les actions de ban et suppression sont persistantes localement via `localStorage`.
-
-- Un utilisateur banni ne peut plus se connecter.
-- Un utilisateur supprime est retire de la liste et sa connexion est refusee.
-- L'administrateur ne peut pas se bannir ou se supprimer lui-meme.
-- Le directeur est protege contre la suppression depuis la maquette.
-
-## Identifiants de test
-
-```txt
-Compte normal : driver@mercatonova.com / nova1234
-Vendeur test  : seller@mercatonova.com / nova1234
-Admin         : admin@mercatonova.com / admin123
-Directeur     : directeur@mercatonova.com / boss123
-Compte banni  : banned@mercatonova.com / banned123
-```
-
-## Lancer le frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Le site est ensuite disponible sur l'URL indiquee par Vite, generalement :
-
-```txt
-http://127.0.0.1:5173
-```
-
-## Construire le frontend
-
-```bash
-cd frontend
-npm run build
-```
-
-Le build a ete verifie avec succes apres l'ajout des pages admin/directeur.
-
-## Base de donnees
-
-Le fichier `database/init.sql` contient le schema MySQL initial.
-Il a ete enrichi pour preparer l'integration backend des nouvelles fonctionnalites :
-
-- role `director` ;
-- informations personnelles utilisateur ;
-- statut de compte : `active`, `banned`, `deleted` ;
-- statut de verification de carte d'identite ;
-- statut d'approbation des annonces : `pending`, `approved`, `rejected` ;
-- lien vers l'administrateur ou directeur ayant approuve une annonce.
-
-## Notes d'integration
-
-Pour l'instant, la gestion des roles, comptes, annonces en attente et bannissements fonctionne en maquette frontend.
-La prochaine etape sera de connecter ces actions aux endpoints PHP/MySQL :
-
-- authentification ;
-- liste des utilisateurs ;
-- ban/suppression utilisateur ;
-- creation d'annonce en attente ;
-- validation/refus d'annonce ;
-- modification/suppression d'annonce.
+---

@@ -246,12 +246,12 @@ CREATE TABLE `notifications` (
 -- ====================================================================
 
 INSERT INTO `users` (`id`, `username`, `email`, `password_hash`, `role`, `account_status`) VALUES
-(1, 'gabin_lead', 'gabin@mercatonova.com', '$2y$10$wzW1qQfKxW03r2x6i.q17uyU6XN4F8P7B/hUe/c.z5Z/Y.q0F2U.y', 'admin', 'active'),
-(2, 'celestin_back', 'celestin@mercatonova.com', '$2y$10$wzW1qQfKxW03r2x6i.q17uyU6XN4F8P7B/hUe/c.z5Z/Y.q0F2U.y', 'seller', 'active'),
-(3, 'paul_auctions', 'paul@mercatonova.com', '$2y$10$wzW1qQfKxW03r2x6i.q17uyU6XN4F8P7B/hUe/c.z5Z/Y.q0F2U.y', 'seller', 'active'),
-(4, 'nicolas_nego', 'nicolas@mercatonova.com', '$2y$10$wzW1qQfKxW03r2x6i.q17uyU6XN4F8P7B/hUe/c.z5Z/Y.q0F2U.y', 'seller', 'active'),
-(5, 'takumi_86', 'takumi.fujiwara@akina.jp', '$2y$10$wzW1qQfKxW03r2x6i.q17uyU6XN4F8P7B/hUe/c.z5Z/Y.q0F2U.y', 'buyer', 'active'),
-(6, 'drift_king', 'keiichi.tsuchiya@hotversion.jp', '$2y$10$wzW1qQfKxW03r2x6i.q17uyU6XN4F8P7B/hUe/c.z5Z/Y.q0F2U.y', 'buyer', 'active');
+(1, 'gabin_lead', 'gabin@mercatonova.com', '$2y$10$9Z7DFAv3ySTs9loHQSFtruXyztudZ3oIXuSl5.aEN.ZzP3yYIASWy', 'admin', 'active'),
+(2, 'celestin_back', 'celestin@mercatonova.com', '$2y$10$9Z7DFAv3ySTs9loHQSFtruXyztudZ3oIXuSl5.aEN.ZzP3yYIASWy', 'seller', 'active'),
+(3, 'paul_auctions', 'paul@mercatonova.com', '$2y$10$9Z7DFAv3ySTs9loHQSFtruXyztudZ3oIXuSl5.aEN.ZzP3yYIASWy', 'seller', 'active'),
+(4, 'nicolas_nego', 'nicolas@mercatonova.com', '$2y$10$9Z7DFAv3ySTs9loHQSFtruXyztudZ3oIXuSl5.aEN.ZzP3yYIASWy', 'seller', 'active'),
+(5, 'takumi_86', 'takumi.fujiwara@akina.jp', '$2y$10$9Z7DFAv3ySTs9loHQSFtruXyztudZ3oIXuSl5.aEN.ZzP3yYIASWy', 'buyer', 'active'),
+(6, 'drift_king', 'keiichi.tsuchiya@hotversion.jp', '$2y$10$9Z7DFAv3ySTs9loHQSFtruXyztudZ3oIXuSl5.aEN.ZzP3yYIASWy', 'buyer', 'active');
 
 INSERT INTO `categories` (`id`, `name`, `description`) VALUES
 (1, 'Vehicles', 'Imported JDM cars and collector vehicles'),

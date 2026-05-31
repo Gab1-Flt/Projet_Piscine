@@ -32,7 +32,7 @@ const presetAvatars = [
   }
 ];
 
-function Account({ user, onUpdateUser, onNavigate, onLogout }) {
+function Account({ user, onUpdateUser, onNavigate, onLogout, apiUrl }) {
   const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'settings'
   
   // États de profil
@@ -53,6 +53,27 @@ function Account({ user, onUpdateUser, onNavigate, onLogout }) {
 
   // Popup de validation in-site
   const [popup, setPopup] = useState(null); // { title, message, type }
+
+  // États pour les transactions réelles de la base de données
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Récupérer les transactions de l'utilisateur depuis l'API MAMP
+  React.useEffect(() => {
+    if (!apiUrl || !user) return;
+    setLoading(true);
+    fetch(`${apiUrl}/api/transactions/index.php`)
+      .then(res => res.json())
+      .then(res => {
+        if (res.status === 'success') {
+          // Filtrer les transactions associées à cet utilisateur par email ou id
+          const userTrans = (res.data || []).filter(t => t.buyer_email === user.email || t.buyer_id === user.id);
+          setTransactions(userTrans);
+        }
+      })
+      .catch(err => console.error("Erreur lors de la récupération des transactions de l'utilisateur:", err))
+      .finally(() => setLoading(false));
+  }, [apiUrl, user]);
 
   const handleProfileSave = (e) => {
     e.preventDefault();
@@ -299,17 +320,21 @@ function Account({ user, onUpdateUser, onNavigate, onLogout }) {
                   <span>Enchères remportées</span>
                   <Timer size={16} className="text-[#17deca]" />
                 </div>
-                <div className="text-3xl font-black text-white font-mono mt-4">2</div>
-                <span className="text-[9px] font-mono text-zinc-500 mt-2 block uppercase">// Skyline R34 & Supra RZ</span>
+                <div className="text-3xl font-black text-white font-mono mt-4">
+                  {loading ? '...' : transactions.filter(t => t.transaction_type === 'auction' && t.status === 'validated').length}
+                </div>
+                <span className="text-[9px] font-mono text-zinc-500 mt-2 block uppercase">// Enchères finalisées et acquises</span>
               </div>
 
               <div className="glass-panel rounded-2xl p-6 border border-white/5 flex flex-col justify-between min-h-[140px] relative overflow-hidden bg-black/20">
                 <div className="flex justify-between items-start text-[#cdc3d4]/50 font-mono text-[10px] uppercase tracking-wider">
-                  <span>Pièces mécaniques</span>
+                  <span>Volume de transactions</span>
                   <Cpu size={16} className="text-[#bb86fc]" />
                 </div>
-                <div className="text-3xl font-black text-white font-mono mt-4">5</div>
-                <span className="text-[9px] font-mono text-zinc-500 mt-2 block uppercase">// Turbos, Combinés, Jantes alloués</span>
+                <div className="text-3xl font-black text-white font-mono mt-4">
+                  {loading ? '...' : `${transactions.filter(t => t.status === 'validated').reduce((sum, t) => sum + parseFloat(t.amount), 0).toLocaleString('fr-FR')} €`}
+                </div>
+                <span className="text-[9px] font-mono text-zinc-500 mt-2 block uppercase">// Total investi sur la plateforme</span>
               </div>
 
               <div className="glass-panel rounded-2xl p-6 border border-white/5 flex flex-col justify-between min-h-[140px] relative overflow-hidden bg-black/20 border-t-2 border-t-[#ffb2bc]/30">
@@ -317,8 +342,10 @@ function Account({ user, onUpdateUser, onNavigate, onLogout }) {
                   <span>Vérification d'identité (KYC)</span>
                   <ShieldCheck size={16} className="text-[#ffb2bc]" />
                 </div>
-                <div className="text-sm font-extrabold text-[#ffb2bc] font-mono mt-4">NIVEAU 2 APPROUVÉ</div>
-                <span className="text-[9px] font-mono text-[#ffb2bc]/60 mt-2 block uppercase">// Dépôt de garantie supérieur à 15k débloqué</span>
+                <div className="text-sm font-extrabold text-[#ffb2bc] font-mono mt-4">
+                  {user?.role === 'admin' ? '🛡️ SYSTEM ADMIN' : '👤 PILOTE EN RÈGLE'}
+                </div>
+                <span className="text-[9px] font-mono text-[#ffb2bc]/60 mt-2 block uppercase">// Dépôt sécurisé par entiercement</span>
               </div>
 
             </div>
@@ -347,59 +374,65 @@ function Account({ user, onUpdateUser, onNavigate, onLogout }) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="p-5 font-sans font-bold text-white">1994 Toyota Supra RZ MK4</td>
-                      <td className="p-5 text-[#cdc3d4]/70">Enchère remportée</td>
-                      <td className="p-5 text-[#cdc3d4]/50">12 oct. 2023</td>
-                      <td className="p-5 font-bold text-[#17deca]">95 000 €</td>
-                      <td className="p-5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold border border-[#17deca]/30 text-[#17deca] bg-[#17deca]/10 uppercase tracking-wider">
-                          <CheckCircle2 size={10} />
-                          Terminé
-                        </span>
-                      </td>
-                    </tr>
+                    {loading ? (
+                      <tr>
+                        <td colSpan="5" className="p-5 text-center text-[#cdc3d4]/50 font-mono">
+                          Chargement des transactions...
+                        </td>
+                      </tr>
+                    ) : transactions.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="p-8 text-center text-[#cdc3d4]/40 font-mono">
+                          Aucune transaction enregistrée.
+                        </td>
+                      </tr>
+                    ) : (
+                      transactions.map((t) => {
+                        const dateStr = t.created_at ? new Date(t.created_at).toLocaleDateString('fr-FR', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        }) : 'N/A';
+                        
+                        let opLabel = "Achat direct";
+                        if (t.transaction_type === 'auction') {
+                          opLabel = "Enchère remportée";
+                        } else if (t.transaction_type === 'negotiation') {
+                          opLabel = "Négociation acceptée";
+                        }
 
-                    <tr className="bg-white/[0.01] hover:bg-white/[0.02] transition-colors">
-                      <td className="p-5 font-sans font-bold text-white">Kit Turbocompresseur Garrett G30-770</td>
-                      <td className="p-5 text-[#cdc3d4]/70">Achat direct catalogue</td>
-                      <td className="p-5 text-[#cdc3d4]/50">28 sept. 2023</td>
-                      <td className="p-5 font-bold text-[#17deca]">2 850 €</td>
-                      <td className="p-5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold border border-[#17deca]/30 text-[#17deca] bg-[#17deca]/10 uppercase tracking-wider">
-                          <CheckCircle2 size={10} />
-                          Terminé
-                        </span>
-                      </td>
-                    </tr>
-
-                    <tr className="hover:bg-white/[0.02] transition-colors">
-                      <td className="p-5 font-sans font-bold text-white">Combinés Filetés Tein Mono Sport (Tuning)</td>
-                      <td className="p-5 text-[#cdc3d4]/70">Ordre de Préparation</td>
-                      <td className="p-5 text-[#cdc3d4]/50">15 sept. 2023</td>
-                      <td className="p-5 font-bold text-[#17deca]">1 650 €</td>
-                      <td className="p-5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold border border-yellow-500/30 text-yellow-400 bg-yellow-500/10 uppercase tracking-wider">
-                          <Clock size={10} className="animate-spin" style={{ animationDuration: '4s' }} />
-                          En attente
-                        </span>
-                      </td>
-                    </tr>
-
-                    <tr className="bg-white/[0.01] hover:bg-white/[0.02] transition-colors">
-                      <td className="p-5 font-sans font-bold text-white">Nissan Skyline GT-R R34 V-Spec</td>
-                      <td className="p-5 text-[#cdc3d4]/70">Enchère remportée</td>
-                      <td className="p-5 text-[#cdc3d4]/50">02 juil. 2023</td>
-                      <td className="p-5 font-bold text-[#ffb2bc]">185 000 €</td>
-                      <td className="p-5">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold border border-red-500/30 text-[#ffb2bc] bg-[#ffb2bc]/10 uppercase tracking-wider">
-                          <X size={10} />
-                          Annulé
-                        </span>
-                      </td>
-                    </tr>
-
+                        return (
+                          <tr key={t.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="p-5 font-sans font-bold text-white">
+                              {t.product_title || `${t.product_brand || ''} ${t.product_model || ''}`}
+                            </td>
+                            <td className="p-5 text-[#cdc3d4]/70">{opLabel}</td>
+                            <td className="p-5 text-[#cdc3d4]/50">{dateStr}</td>
+                            <td className="p-5 font-bold text-[#17deca]">
+                              {parseFloat(t.amount).toLocaleString('fr-FR')} €
+                            </td>
+                            <td className="p-5">
+                              {t.status === 'validated' ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold border border-[#17deca]/30 text-[#17deca] bg-[#17deca]/10 uppercase tracking-wider">
+                                  <CheckCircle2 size={10} />
+                                  Terminé
+                                </span>
+                              ) : t.status === 'pending' ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold border border-yellow-500/30 text-yellow-400 bg-yellow-500/10 uppercase tracking-wider">
+                                  <Clock size={10} className="animate-spin" style={{ animationDuration: '4s' }} />
+                                  En attente
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-bold border border-red-500/30 text-[#ffb2bc] bg-[#ffb2bc]/10 uppercase tracking-wider">
+                                  <X size={10} />
+                                  Annulé
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>

@@ -13,6 +13,7 @@ function Messages({ user, apiUrl, onNavigate, onLogout }) {
   const [loadingThreads, setLoadingThreads] = useState(true);
   const [loadingChat, setLoadingChat] = useState(false);
   const [sending, setSending] = useState(false);
+  const [activeNegoWithContact, setActiveNegoWithContact] = useState(null);
   
   const messagesEndRef = useRef(null);
 
@@ -67,6 +68,27 @@ function Messages({ user, apiUrl, onNavigate, onLogout }) {
       }, 3000);
       
       return () => clearInterval(timer);
+    }
+  }, [activeContact, currentUserId, apiUrl]);
+
+  // Lookup active negotiations with the selected contact
+  useEffect(() => {
+    if (activeContact) {
+      fetch(`${apiUrl}/api/negotiations/get.php?user_id=${currentUserId}`)
+        .then(res => res.json())
+        .then(res => {
+          if (res.status === 'success') {
+            const list = res.data || [];
+            const found = list.find(n => 
+              (parseInt(n.buyer_id) === activeContact.id || parseInt(n.seller_id) === activeContact.id) &&
+              (n.status === 'pending' || n.status === 'counter_offer' || n.status === 'accepted')
+            );
+            setActiveNegoWithContact(found || null);
+          }
+        })
+        .catch(err => console.error("Error fetching nego for thread:", err));
+    } else {
+      setActiveNegoWithContact(null);
     }
   }, [activeContact, currentUserId, apiUrl]);
 
@@ -394,6 +416,24 @@ function Messages({ user, apiUrl, onNavigate, onLogout }) {
                     </span>
                   </div>
                 </div>
+
+                {/* Active Negotiation Link Banner */}
+                {activeNegoWithContact && (
+                  <div className="bg-[#ffb2bc]/10 border-b border-[#ffb2bc]/25 px-6 py-3 flex items-center justify-between font-mono text-[10px] text-[#ffb2bc] animate-in slide-in-from-top duration-300">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={14} className="animate-pulse" />
+                      <span>
+                        <strong>Négociation en cours</strong> pour le produit <strong>{activeNegoWithContact.product_brand} {activeNegoWithContact.product_model}</strong> ({activeNegoWithContact.status === 'accepted' ? 'Accord trouvé !' : 'Offre active : ' + parseFloat(activeNegoWithContact.offered_price).toLocaleString() + ' €'})
+                      </span>
+                    </div>
+                    <button 
+                      onClick={() => onNavigate('negotiation', activeNegoWithContact.id)}
+                      className="bg-[#ffb2bc] hover:bg-[#ff97a7] text-[#400013] font-bold px-3 py-1.5 rounded-lg uppercase tracking-wider transition-colors active:scale-95 cursor-pointer shrink-0 ml-4 shadow-[0_0_10px_rgba(255,178,188,0.25)] border-none"
+                    >
+                      Ouvrir l'Espace Négociation P2P →
+                    </button>
+                  </div>
+                )}
 
                 {/* Messages Body */}
                 <div className="flex-grow overflow-y-auto p-4 md:p-6 space-y-4">

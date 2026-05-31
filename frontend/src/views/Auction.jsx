@@ -50,6 +50,53 @@ function Auction({ user, product, onBack, onLogout, onNavigate, apiUrl }) {
     setBidAmountInput((currentPrice + 1000).toString());
   }, [currentPrice]);
 
+  // Synchroniser le temps restant et les détails avec la base de données réelle
+  useEffect(() => {
+    if (!apiUrl || !currentProduct.id) return;
+
+    const fetchAuctionDetails = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/auctions/index.php`);
+        const data = await res.json();
+        if (data.status === 'success') {
+          // Rechercher l'enchère pour ce produit
+          const matchedAuction = (data.data || []).find(
+            item => parseInt(item.product_id) === parseInt(currentProduct.id)
+          );
+          
+          if (matchedAuction) {
+            // Mettre à jour le prix actuel réel
+            setCurrentPrice(parseFloat(matchedAuction.current_bid));
+            setBidAmountInput((parseFloat(matchedAuction.current_bid) + 1000).toString());
+            
+            // Mettre à jour le leader réel
+            if (matchedAuction.highest_bidder_name) {
+              setHighestBidder(matchedAuction.highest_bidder_name);
+              // Remplir aussi l'historique d'enchères de façon cohérente avec la BDD
+              setBids(prev => [
+                { bidder: matchedAuction.highest_bidder_name, amount: parseFloat(matchedAuction.current_bid), time: 'En tête', avatar: matchedAuction.highest_bidder_name.substring(0,2).toUpperCase(), isOpponent: matchedAuction.highest_bidder_name !== 'Vous' },
+                ...prev.filter(b => b.bidder !== matchedAuction.highest_bidder_name).slice(0, 2)
+              ]);
+            }
+            
+            // Calculer le temps restant réel en secondes
+            const timeEnd = new Date(matchedAuction.end_date.replace(/-/g, "/")).getTime();
+            const timeNow = Date.now();
+            const secondsLeft = Math.max(0, Math.floor((timeEnd - timeNow) / 1000));
+            setTimeLeft(secondsLeft);
+            
+            // Injecter l'ID de l'enchère pour que les futures offres sachent où s'écrire
+            currentProduct.auctionId = parseInt(matchedAuction.auction_id);
+          }
+        }
+      } catch (err) {
+        console.error("Erreur lors de la synchronisation de l'enchère:", err);
+      }
+    };
+
+    fetchAuctionDetails();
+  }, [apiUrl, currentProduct.id]);
+
   // Gérer le compte à rebours de l'enchère
   useEffect(() => {
     if (isCompleted || timeLeft <= 0) {

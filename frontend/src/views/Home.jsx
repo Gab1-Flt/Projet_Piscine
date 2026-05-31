@@ -4,9 +4,9 @@ import {
   ShoppingCart, Timer, SlidersHorizontal, ArrowUpRight,
   Check, X, Zap, Cpu, Compass, Landmark, Heart, LogOut,
   Trash2, Pencil, Plus, Users, FileCheck, BarChart3, Ban,
-  AlertTriangle, UserCheck, Crown, Sparkles
+  AlertTriangle, UserCheck, Crown, Sparkles, Loader2
 } from 'lucide-react';
-import ProductList from '../components/features/ProductList';
+
 import { adminStats, initialPendingListings, mockUsers } from '../data/mockData';
 import SellerDashboard from './SellerDashboard';
 import { getJDMImage } from '../utils/jdmImages';
@@ -513,6 +513,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
   const canModerate = isAdmin || isDirector;
 
   const [products, setProducts] = useState(initialProducts);
+  const [visibleCount, setVisibleCount] = useState(6);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -531,10 +532,14 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
 
             // Construct status based on sale_type
             let displayStatus = 'Achat Direct';
-            if (item.sale_type === 'auction') {
+            if (item.status === 'sold') {
+              displayStatus = 'Vendu';
+            } else if (item.sale_type === 'auction') {
               displayStatus = 'Enchère en Cours';
             } else if (item.sale_type === 'negotiation') {
               displayStatus = 'Négociation';
+            } else if (item.sale_type === 'mixte' || item.sale_type === 'both') {
+              displayStatus = 'Mixte (Direct & Enchère)';
             }
 
             return {
@@ -653,12 +658,22 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
   });
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [negotiatingProduct, setNegotiatingProduct] = useState(null);
+  const [negoOfferPrice, setNegoOfferPrice] = useState('');
+  const [negoOfferMessage, setNegoOfferMessage] = useState("Salut ! Je suis très intéressé par ton bolide. Est-ce que mon offre te convient ?");
+  const [submittingNego, setSubmittingNego] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState(['Voitures JDM', 'Pièces Performance', 'Accessoires']);
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
   const [favorites, setFavorites] = useState([]); // Tableau contenant les IDs des produits favoris
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false); // Filtre favoris uniquement
   const [salesFilter, setSalesFilter] = useState('all'); // 'all', 'auction', 'negotiation', 'direct'
+  const [hideSoldProducts, setHideSoldProducts] = useState(true); // Masquer les produits vendus par défaut
+
+  // Réinitialiser la pagination lors d'un changement de filtre
+  useEffect(() => {
+    setVisibleCount(6);
+  }, [searchQuery, selectedCategories, selectedBrand, showOnlyFavorites, salesFilter, hideSoldProducts]);
 
   // États de Panier Premium (consommés par les props)
   const [showCartMenu, setShowCartMenu] = useState(false);
@@ -669,17 +684,37 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
   const [showMessagesMenu, setShowMessagesMenu] = useState(false);
 
   // Données de Notifications
-  const [notifications, setNotifications] = useState([
-    { id: 1, text: "Enchère Skyline R34 dépassée par takumi_86", time: "Il y a 10 min", read: false },
-    { id: 2, text: "Nouveau message de Keiichi Tsuchiya", time: "Il y a 2 heures", read: false },
-    { id: 3, text: "Entiercement validé pour Jantes GP 18\"", time: "Hier", read: true }
-  ]);
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    if (!user || !apiUrl) return;
+    const fetchNotifs = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/notifications/get.php?user_id=${user.id}`);
+        const data = await res.json();
+        if (data.status === 'success') {
+          const mapped = data.data.map(n => ({
+            id: parseInt(n.id),
+            text: n.title + " : " + n.message,
+            time: n.created_at,
+            read: n.is_read == 1
+          }));
+          setNotifications(mapped);
+        }
+      } catch (err) {
+        console.error("Erreur de récupération des notifications:", err);
+      }
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 15000); // Polling every 15s
+    return () => clearInterval(interval);
+  }, [user, apiUrl]);
 
   // Données de Messagerie
   const [messages, setMessages] = useState([
-    { id: 1, sender: "Takumi Fujiwara", snippet: "Le turbo HKS est encore dispo ?", time: "18:42", online: true },
-    { id: 2, sender: "Keiichi Tsuchiya", snippet: "Je pose une offre sur ta R34.", time: "15:20", online: false },
-    { id: 3, sender: "Célestin (Admin)", snippet: "Réseau crypté opérationnel.", time: "Hier", online: true }
+    { id: 1, sender: "Takumi Fujiwara", snippet: "Le turbo HKS est encore dispo ?", time: "18:42", online: true, unread: true },
+    { id: 2, sender: "Keiichi Tsuchiya", snippet: "Je pose une offre sur ta R34.", time: "15:20", online: false, unread: true },
+    { id: 3, sender: "Célestin (Admin)", snippet: "Réseau crypté opérationnel.", time: "Hier", online: true, unread: false }
   ]);
 
 
@@ -813,6 +848,48 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
     }
   };
 
+  const handleStartNegotiationSubmit = async (e) => {
+    e.preventDefault();
+    if (!user || !negotiatingProduct || submittingNego) return;
+    
+    setSubmittingNego(true);
+    try {
+      const res = await fetch(`${apiUrl}/api/negotiations/create.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: negotiatingProduct.id,
+          buyer_id: user.id,
+          offered_price: parseFloat(negoOfferPrice),
+          message: negoOfferMessage
+        })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        const negoId = data.data.negotiation_id;
+        setNegotiatingProduct(null);
+        setNegoOfferPrice('');
+        setNegoOfferMessage("Salut ! Je suis très intéressé par ton bolide. Est-ce que mon offre te convient ?");
+        onNavigate('negotiation', negoId);
+      } else {
+        setPopup({
+          title: "Échec Négociation",
+          message: data.message || "Impossible de démarrer la négociation.",
+          type: "warning"
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      setPopup({
+        title: "Échec Réseau",
+        message: "Erreur de connexion avec le serveur SQL.",
+        type: "warning"
+      });
+    } finally {
+      setSubmittingNego(false);
+    }
+  };
+
   const handleDeleteUser = async (email) => {
     if (!canModerate) return;
     try {
@@ -891,6 +968,8 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
     setShowNotificationsMenu(false);
     setShowCartMenu(false);
     setShowProfileMenu(false);
+    // Mark all messages as read when opening
+    setMessages(prev => prev.map(m => ({ ...m, unread: false })));
   };
 
   const toggleCart = () => {
@@ -946,8 +1025,9 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
     const matchesBrand = selectedBrand ? product.brand === selectedBrand : true;
     const matchesFavorites = showOnlyFavorites ? favorites.includes(product.id) : true;
     const matchesSalesType = salesFilter === 'all' ? true : product.saleType === salesFilter;
+    const matchesSold = hideSoldProducts ? product.status !== 'Vendu' : true;
 
-    return matchesSearch && matchesCategory && matchesBrand && matchesFavorites && matchesSalesType;
+    return matchesSearch && matchesCategory && matchesBrand && matchesFavorites && matchesSalesType && matchesSold;
   });
 
 
@@ -982,15 +1062,23 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
     });
   };
 
-  const handleReadNotification = (id) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const handleReadNotification = async (id) => {
+    try {
+      await fetch(`${apiUrl}/api/notifications/read.php`, {
+        method: 'POST',
+        body: JSON.stringify({ id })
+      });
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const unreadNotificationsCount = notifications.filter(n => !n.read).length;
 
   // Rendu conditionnel si vendeur
   if (user?.role === 'seller') {
-    return <SellerDashboard user={user} onLogout={onLogout} />;
+    return <SellerDashboard user={user} onLogout={onLogout} apiUrl={apiUrl} />;
   }
 
   return (
@@ -1062,109 +1150,115 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
 
             <div className="flex gap-2.5">
 
-              {/* Menu Déroulant Notifications */}
-              <div className="relative">
-                <button
-                  onClick={toggleNotifications}
-                  className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${showNotificationsMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
-                    }`}
-                  title="Notifications"
-                >
-                  <Bell size={20} />
-                  {unreadNotificationsCount > 0 && (
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(187,134,252,0.6)]"></span>
-                  )}
-                </button>
+              {isAuthenticated && (
+                <>
+                  {/* Menu Déroulant Notifications */}
+                  <div className="relative">
+                    <button
+                      onClick={toggleNotifications}
+                      className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${showNotificationsMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
+                        }`}
+                      title="Notifications"
+                    >
+                      <Bell size={20} />
+                      {unreadNotificationsCount > 0 && (
+                        <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(187,134,252,0.6)]"></span>
+                      )}
+                    </button>
 
-                {showNotificationsMenu && (
-                  <>
-                    <div onClick={() => setShowNotificationsMenu(false)} className="fixed inset-0 z-30"></div>
-                    <div className="absolute right-0 mt-3 w-80 rounded-xl border border-white/10 bg-[#1c1b1b] py-3 shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-40 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
-                      <div className="px-4 pb-2 border-b border-white/5 flex justify-between items-center">
-                        <span className="text-[10px] font-mono font-bold text-[#cdc3d4]/50 uppercase tracking-widest">Flux Réseau</span>
-                        <button
-                          onClick={() => setNotifications(notifications.map(n => ({ ...n, read: true })))}
-                          className="text-[9px] font-mono text-[#bb86fc] hover:underline font-bold"
-                        >
-                          Tout lire
-                        </button>
-                      </div>
-
-                      <div className="max-h-64 overflow-y-auto mt-1 divide-y divide-white/5">
-                        {notifications.map(n => (
-                          <div
-                            key={n.id}
-                            onClick={() => handleReadNotification(n.id)}
-                            className={`px-4 py-3 hover:bg-white/5 transition-all relative cursor-pointer ${!n.read ? 'bg-primary/5' : ''}`}
-                          >
-                            {!n.read && <span className="absolute top-3.5 left-2 w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>}
-                            <p className="text-xs text-zinc-200 pl-1">{n.text}</p>
-                            <span className="text-[9px] font-mono text-zinc-500 block mt-1 pl-1">{n.time}</span>
+                    {showNotificationsMenu && (
+                      <>
+                        <div onClick={() => setShowNotificationsMenu(false)} className="fixed inset-0 z-30"></div>
+                        <div className="absolute right-0 mt-3 w-80 rounded-xl border border-white/10 bg-[#1c1b1b] py-3 shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-40 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
+                          <div className="px-4 pb-2 border-b border-white/5 flex justify-between items-center">
+                            <span className="text-[10px] font-mono font-bold text-[#cdc3d4]/50 uppercase tracking-widest">Flux Réseau</span>
+                            <button
+                              onClick={() => setNotifications(notifications.map(n => ({ ...n, read: true })))}
+                              className="text-[9px] font-mono text-[#bb86fc] hover:underline font-bold"
+                            >
+                              Tout lire
+                            </button>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
 
-              {/* Menu Déroulant Messagerie */}
-              <div className="relative">
-                <button
-                  onClick={toggleMessages}
-                  className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${showMessagesMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
-                    }`}
-                  title="Messages"
-                >
-                  <MessageSquare size={20} />
-                  <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-secondary"></span>
-                </button>
-
-                {showMessagesMenu && (
-                  <>
-                    <div onClick={() => setShowMessagesMenu(false)} className="fixed inset-0 z-30"></div>
-                    <div className="absolute right-0 mt-3 w-80 rounded-xl border border-white/10 bg-[#1c1b1b] py-3 shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-40 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
-                      <div className="px-4 pb-2 border-b border-white/5 flex justify-between items-center">
-                        <span className="text-[10px] font-mono font-bold text-[#cdc3d4]/50 uppercase tracking-widest">Messagerie</span>
-                        <span className="text-[9px] font-mono text-[#17deca] font-bold">3 Actifs</span>
-                      </div>
-
-                      <div className="max-h-64 overflow-y-auto mt-1 divide-y divide-white/5">
-                        {messages.map(m => (
-                          <div
-                            key={m.id}
-                            onClick={() => { setShowMessagesMenu(false); onNavigate('messages'); }}
-                            className="px-4 py-3 hover:bg-white/5 transition-all flex items-start gap-3 cursor-pointer"
-                          >
-                            <div className="relative flex-shrink-0">
-                              <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs text-[#bb86fc]">
-                                {m.sender.split(' ').map(n => n[0]).join('')}
+                          <div className="max-h-64 overflow-y-auto mt-1 divide-y divide-white/5">
+                            {notifications.map(n => (
+                              <div
+                                key={n.id}
+                                onClick={() => handleReadNotification(n.id)}
+                                className={`px-4 py-3 hover:bg-white/5 transition-all relative cursor-pointer ${!n.read ? 'bg-primary/5' : ''}`}
+                              >
+                                {!n.read && <span className="absolute top-3.5 left-2 w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>}
+                                <p className="text-xs text-zinc-200 pl-1">{n.text}</p>
+                                <span className="text-[9px] font-mono text-zinc-500 block mt-1 pl-1">{n.time}</span>
                               </div>
-                              {m.online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#17deca] border-2 border-[#1c1b1b]"></span>}
-                            </div>
-                            <div className="flex-grow min-w-0">
-                              <div className="flex justify-between items-baseline mb-0.5">
-                                <h4 className="text-xs font-bold text-zinc-200 truncate">{m.sender}</h4>
-                                <span className="text-[9px] font-mono text-zinc-500">{m.time}</span>
-                              </div>
-                              <p className="text-[11px] text-[#cdc3d4]/70 truncate">{m.snippet}</p>
-                            </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
 
-                      <div className="px-4 pt-2.5 border-t border-white/5 mt-1 text-center">
-                        <button
-                          onClick={() => { setShowMessagesMenu(false); onNavigate('messages'); }}
-                          className="w-full text-center text-[10px] font-mono text-[#bb86fc] hover:underline font-bold py-1 cursor-pointer uppercase tracking-wider bg-transparent border-none"
-                        >
-                          Ouvrir le Réseau de Messagerie →
-                        </button>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
+                  {/* Menu Déroulant Messagerie */}
+                  <div className="relative">
+                    <button
+                      onClick={toggleMessages}
+                      className={`p-2 rounded-full transition-all relative active:scale-95 cursor-pointer ${showMessagesMenu ? 'text-[#bb86fc] bg-white/5' : 'text-[#cdc3d4] hover:text-[#bb86fc] hover:bg-white/5'
+                        }`}
+                      title="Messages"
+                    >
+                      <MessageSquare size={20} />
+                      {messages.some(m => m.unread) && (
+                        <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                      )}
+                    </button>
+
+                    {showMessagesMenu && (
+                      <>
+                        <div onClick={() => setShowMessagesMenu(false)} className="fixed inset-0 z-30"></div>
+                        <div className="absolute right-0 mt-3 w-80 rounded-xl border border-white/10 bg-[#1c1b1b] py-3 shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-40 animate-in fade-in slide-in-from-top-2 duration-150 font-sans">
+                          <div className="px-4 pb-2 border-b border-white/5 flex justify-between items-center">
+                            <span className="text-[10px] font-mono font-bold text-[#cdc3d4]/50 uppercase tracking-widest">Messagerie</span>
+                            <span className="text-[9px] font-mono text-[#17deca] font-bold">3 Actifs</span>
+                          </div>
+
+                          <div className="max-h-64 overflow-y-auto mt-1 divide-y divide-white/5">
+                            {messages.map(m => (
+                              <div
+                                key={m.id}
+                                onClick={() => { setShowMessagesMenu(false); onNavigate('messages'); }}
+                                className="px-4 py-3 hover:bg-white/5 transition-all flex items-start gap-3 cursor-pointer"
+                              >
+                                <div className="relative flex-shrink-0">
+                                  <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center font-bold text-xs text-[#bb86fc]">
+                                    {m.sender.split(' ').map(n => n[0]).join('')}
+                                  </div>
+                                  {m.online && <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#17deca] border-2 border-[#1c1b1b]"></span>}
+                                </div>
+                                <div className="flex-grow min-w-0">
+                                  <div className="flex justify-between items-baseline mb-0.5">
+                                    <h4 className="text-xs font-bold text-zinc-200 truncate">{m.sender}</h4>
+                                    <span className="text-[9px] font-mono text-zinc-500">{m.time}</span>
+                                  </div>
+                                  <p className="text-[11px] text-[#cdc3d4]/70 truncate">{m.snippet}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="px-4 pt-2.5 border-t border-white/5 mt-1 text-center">
+                            <button
+                              onClick={() => { setShowMessagesMenu(false); onNavigate('messages'); }}
+                              className="w-full text-center text-[10px] font-mono text-[#bb86fc] hover:underline font-bold py-1 cursor-pointer uppercase tracking-wider bg-transparent border-none"
+                            >
+                              Ouvrir le Réseau de Messagerie →
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
 
               {/* Bouton Favoris Interactif */}
               <button
@@ -1515,6 +1609,22 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                   </label>
                 </div>
 
+                {/* Masquer les produits vendus */}
+                <div className="pt-4 mt-4 border-t border-white/5">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      checked={hideSoldProducts}
+                      onChange={() => setHideSoldProducts(!hideSoldProducts)}
+                      className="form-checkbox bg-[#201f1f] border-white/10 text-primary focus:ring-primary rounded cursor-pointer"
+                      type="checkbox"
+                    />
+                    <span className="text-sm text-[#e5e2e1] group-hover:text-primary transition-colors flex items-center gap-1.5 font-sans">
+                      <Ban size={14} className={hideSoldProducts ? "text-primary" : "text-[#cdc3d4]"} />
+                      Masquer les articles vendus
+                    </span>
+                  </label>
+                </div>
+
                 {/* Bloc de Statut Réseau */}
                 <div className="pt-6 border-t border-white/5 bg-[#1c1b1b]/30 p-4 rounded-xl">
                   <div className="flex items-center space-x-2 text-[#ffb2bc] mb-2">
@@ -1613,7 +1723,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
               : "space-y-4"
             }>
               {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
+                filteredProducts.slice(0, visibleCount).map((product) => (
                   <div
                     key={product.id}
                     className={`glass-panel rounded-2xl overflow-hidden group hover:neon-glow-primary transition-all duration-300 border border-white/5 flex flex-col ${viewMode === 'list' ? 'md:flex-row' : ''
@@ -1664,11 +1774,16 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                             <Check size={9} strokeWidth={3} /> Vérifié
                           </span>
                         )}
-                        <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-white/10 ${product.saleType === 'auction'
-                          ? 'bg-secondary-dark/45 text-[#ffb2bc] border-[#ffb2bc]/30 shadow-[0_0_8px_rgba(255,178,188,0.2)]'
-                          : product.saleType === 'negotiation'
-                            ? 'bg-tertiary/10 text-tertiary border-tertiary/20 shadow-[0_0_8px_rgba(23,222,202,0.2)]'
-                            : 'bg-[#1c1b1b] text-zinc-300 border-zinc-700/50'
+                         <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-white/10 ${
+                            product.status === 'Vendu'
+                              ? 'bg-red-500/10 text-red-400 border-red-500/30 shadow-[0_0_8px_rgba(239,68,68,0.2)]'
+                              : product.saleType === 'auction'
+                                ? 'bg-secondary-dark/45 text-[#ffb2bc] border-[#ffb2bc]/30 shadow-[0_0_8px_rgba(255,178,188,0.2)]'
+                                : product.saleType === 'negotiation'
+                                  ? 'bg-tertiary/10 text-tertiary border-tertiary/20 shadow-[0_0_8px_rgba(23,222,202,0.2)]'
+                                  : (product.saleType === 'mixte' || product.saleType === 'both')
+                                    ? 'bg-gradient-to-r from-[#bb86fc]/20 to-[#ffb2bc]/20 text-[#dab9ff] border-[#bb86fc]/30 shadow-[0_0_8px_rgba(187,134,252,0.2)]'
+                                    : 'bg-[#1c1b1b] text-zinc-300 border-zinc-700/50'
                           }`}>
                           {product.status}
                         </span>
@@ -1739,7 +1854,20 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                       {/* Bloc d'Actions interactives */}
                       <div className="flex flex-col justify-between h-full">
                         <div className="flex justify-between items-center gap-3 mt-4 pt-1">
-                          {product.category !== 'Voitures JDM' ? (
+                          {product.status === 'Vendu' ? (
+                            <>
+                              <div className="flex items-center space-x-1.5 text-xs text-red-400 font-semibold">
+                                <Ban size={14} />
+                                <span>Indisponible</span>
+                              </div>
+                              <button
+                                disabled
+                                className="bg-white/5 border border-white/10 text-zinc-500 text-xs font-mono font-bold px-5 py-2.5 rounded-lg uppercase tracking-wider cursor-not-allowed"
+                              >
+                                Déjà vendu
+                              </button>
+                            </>
+                          ) : product.category !== 'Voitures JDM' ? (
                             <>
                               <div className="font-extrabold text-base md:text-lg text-zinc-100 font-mono">
                                 {product.price.toLocaleString()} €
@@ -1764,6 +1892,42 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                                 Placer une Offre
                               </button>
                             </>
+                          ) : (product.saleType === 'mixte' || product.saleType === 'both') ? (
+                            <div className="flex flex-col w-full gap-2 mt-1">
+                              <div className="flex justify-between items-center text-xs font-mono mb-1">
+                                <span className="text-zinc-500">Mise à prix : <strong className="text-zinc-300">{product.price.toLocaleString()} €</strong></span>
+                                <span className="text-[#ffb2bc] animate-pulse">Live</span>
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    if (!isAuthenticated) {
+                                      requestAuthentication("Connexion requise : Vous devez être connecté pour procéder à un achat direct.");
+                                      return;
+                                    }
+                                    onNavigate('checkout', {
+                                      type: 'direct',
+                                      items: [{
+                                        id: product.id,
+                                        name: `Achat Immédiat : ${product.brand} ${product.model}`,
+                                        price: product.price,
+                                        image: product.image,
+                                        qty: 1
+                                      }]
+                                    });
+                                  }}
+                                  className="flex-1 bg-gradient-to-r from-[#bb86fc] to-[#ffb2bc] text-[#460283] hover:text-black font-extrabold text-[10px] py-2 rounded uppercase tracking-wider text-center cursor-pointer transition-all active:scale-95 shadow-[0_0_12px_rgba(187,134,252,0.2)]"
+                                >
+                                  Achat Direct
+                                </button>
+                                <button
+                                  onClick={() => onSelectAuction(product)}
+                                  className="flex-1 bg-white/5 border border-white/10 hover:border-[#bb86fc]/30 text-white font-bold text-[10px] py-2 rounded uppercase tracking-wider text-center cursor-pointer transition-all active:scale-95"
+                                >
+                                  Enchérir
+                                </button>
+                              </div>
+                            </div>
                           ) : (
                             <>
                               <div className="flex items-center space-x-1.5 text-xs text-[#17deca] font-semibold">
@@ -1771,7 +1935,14 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                                 <span>Entiercement Vérifié</span>
                               </div>
                               <button
-                                onClick={() => setPopup({ title: "Négociation", message: `Négociation ouverte pour la ${product.model}. Une fois le backend connecté par Nicolas, cette action enverra une offre en base.`, type: "info" })}
+                                onClick={() => {
+                                  if (!isAuthenticated) {
+                                    requestAuthentication("Connexion requise : Vous devez vous connecter pour démarrer une négociation.");
+                                    return;
+                                  }
+                                  setNegotiatingProduct(product);
+                                  setNegoOfferPrice(Math.round(product.price * 0.9)); // Propose 90% as starting offer
+                                }}
                                 className="bg-white/10 hover:bg-[#ffb2bc]/15 border border-white/10 hover:border-[#ffb2bc]/30 text-[#e5e2e1] text-xs font-bold px-5 py-2.5 rounded-lg uppercase tracking-wider cursor-pointer transition-all active:scale-95"
                               >
                                 Négocier le Prix
@@ -1797,10 +1968,10 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
             </div>
 
             {/* Pagination Bouton */}
-            {filteredProducts.length > 0 && (
+            {filteredProducts.length > visibleCount && (
               <div className="flex justify-center pt-8">
                 <button
-                  onClick={() => setPopup({ title: "Inventaire Chargé", message: "Inventaire complet chargé. Gabin ajoutera la pagination lors de l'intégration finale avec Célestin.", type: "info" })}
+                  onClick={() => setVisibleCount(prev => prev + 4)}
                   className="neon-border-btn text-xs font-bold px-8 py-3 rounded-full uppercase tracking-widest text-[#e5e2e1] hover:text-[#bb86fc] cursor-pointer active:scale-95"
                 >
                   Charger plus de Véhicules
@@ -1808,8 +1979,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
               </div>
             )}
 
-            {/* Database Live Showcase */}
-            <ProductList />
+
           </section>
         </main>
       ) : (
@@ -2245,6 +2415,87 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE DEBUT DE NEGOCIATION (AESTHETIC CYBERPUNK & GLASSMORPHIC) */}
+      {negotiatingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+          <div className="glass-panel w-full max-w-lg rounded-2xl border border-[#ffb2bc]/30 p-8 shadow-[0_0_50px_rgba(255,178,188,0.25)] relative animate-in fade-in zoom-in-95 duration-200">
+            <span className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[#bb86fc] animate-pulse"></span>
+            <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[#ffb2bc] animate-pulse"></span>
+            
+            <button 
+              onClick={() => setNegotiatingProduct(null)}
+              className="absolute top-4 right-4 text-zinc-500 hover:text-white"
+            >
+              <X size={18} />
+            </button>
+
+            <form onSubmit={handleStartNegotiationSubmit} className="space-y-5">
+              <div className="text-center font-sans">
+                <div className="w-12 h-12 rounded-full bg-[#ffb2bc]/10 border border-[#ffb2bc]/20 shadow-[0_0_15px_rgba(255,178,188,0.2)] flex items-center justify-center mx-auto text-[#ffb2bc]">
+                  <MessageSquare size={24} />
+                </div>
+                <h3 className="text-lg font-black italic tracking-tighter uppercase text-white font-mono mt-3">
+                  Négociation P2P Sécurisée
+                </h3>
+                <p className="text-[11px] text-[#cdc3d4]/70 font-mono mt-1 leading-relaxed">
+                  Proposez votre offre pour la <span className="text-white font-bold">{negotiatingProduct.brand} {negotiatingProduct.model}</span>.
+                </p>
+              </div>
+
+              <div className="bg-[#131313]/60 p-4 border border-white/5 rounded-xl font-mono text-[11px] text-[#cdc3d4]/70 flex justify-between items-center">
+                <span>Prix catalogue :</span>
+                <span className="font-extrabold text-white">{negotiatingProduct.price.toLocaleString()} €</span>
+              </div>
+
+              <div className="space-y-4">
+                <label className="block space-y-1.5">
+                  <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-widest block">Votre offre d'achat (€) *</span>
+                  <div className="relative rounded-xl bg-[#1c1b1b] border border-white/10 focus-within:border-[#ffb2bc] transition-all">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 font-mono text-zinc-600 font-extrabold text-xs">EUR (€)</span>
+                    <input 
+                      type="number"
+                      required
+                      min="1"
+                      className="w-full bg-transparent border-none text-right font-mono font-bold text-white text-base pr-4 pl-20 py-3 focus:outline-none focus:ring-0"
+                      value={negoOfferPrice}
+                      onChange={(e) => setNegoOfferPrice(e.target.value)}
+                    />
+                  </div>
+                </label>
+
+                <label className="block space-y-1.5">
+                  <span className="text-[9px] font-mono text-[#cdc3d4]/50 uppercase tracking-widest block">Message introductif *</span>
+                  <textarea
+                    required
+                    rows="3"
+                    className="w-full bg-[#1c1b1b] border border-white/10 rounded-xl p-3 text-xs font-mono text-white focus:outline-none focus:border-[#ffb2bc] resize-none"
+                    value={negoOfferMessage}
+                    onChange={(e) => setNegoOfferMessage(e.target.value)}
+                  />
+                </label>
+              </div>
+
+              <div className="flex gap-4 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setNegotiatingProduct(null)}
+                  className="flex-grow py-3 bg-white/5 hover:bg-white/10 text-zinc-300 border border-white/10 rounded-xl font-bold font-mono text-xs uppercase tracking-wider transition-all"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingNego || !negoOfferPrice}
+                  className="flex-grow py-3 bg-gradient-to-r from-[#bb86fc] to-[#ffb2bc] text-black font-extrabold font-mono text-xs uppercase tracking-wider rounded-xl shadow-[0_0_15px_rgba(255,178,188,0.35)] transition-all disabled:opacity-50"
+                >
+                  {submittingNego ? <Loader2 className="animate-spin mx-auto" size={15} /> : "Démarrer la négociation"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

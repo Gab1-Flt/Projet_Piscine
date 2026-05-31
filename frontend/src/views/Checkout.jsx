@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   CreditCard, ShieldCheck, CheckCircle2, ArrowRight, X, Copy,
   Printer, ArrowLeft, RefreshCw, AlertTriangle, Building, Wallet,
-  Info, Cpu, Landmark, HelpCircle, FileText
+  Info, Cpu, Landmark, HelpCircle, FileText, Zap
 } from 'lucide-react';
 
 function Checkout({ checkoutData, onClearCart, onNavigate, user, apiUrl }) {
@@ -294,6 +294,23 @@ function Checkout({ checkoutData, onClearCart, onNavigate, user, apiUrl }) {
                   {paymentMethod === 'card' && (
                     <div className="space-y-4 font-mono text-xs">
                       
+                      {/* Bouton de préremplissage test */}
+                      <div className="flex justify-end mb-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCardHolder('TAKUMI FUJIWARA');
+                            setCardNumber('4000 1234 5678 9010');
+                            setCardExpiry('12/28');
+                            setCardCvc('860');
+                          }}
+                          className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-[9px] font-bold tracking-wider font-mono uppercase bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#bb86fc]/40 text-[#cdc3d4]/80 hover:text-white transition-all active:scale-95 cursor-pointer"
+                        >
+                          <Zap size={11} className="text-[#bb86fc] animate-pulse" />
+                          <span>Remplir carte de test</span>
+                        </button>
+                      </div>
+
                       {/* Titulaire */}
                       <div className="space-y-1.5">
                         <label className="text-[9px] text-[#cdc3d4]/40 uppercase tracking-widest block">Nom complet sur la carte</label>
