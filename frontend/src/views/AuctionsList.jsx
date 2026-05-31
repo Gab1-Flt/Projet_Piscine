@@ -240,6 +240,13 @@ function AuctionsList({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout
                         </span>
                       </div>
                       <button 
+                        onClick={() => { setShowProfileMenu(false); onNavigate('account'); }}
+                        className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-zinc-400 hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
+                      >
+                        <User size={14} className="text-[#bb86fc]" />
+                        <span>Mon compte</span>
+                      </button>
+                      <button 
                         onClick={() => { setShowProfileMenu(false); onLogout(); }}
                         className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-zinc-400 hover:text-red-400 hover:bg-red-500/5 transition-all text-left cursor-pointer border-t border-white/5 mt-1.5 pt-2"
                       >

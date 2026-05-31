@@ -1077,11 +1077,7 @@ function Home({ user, cartItems, onAddToCart, onRemoveFromCart, onLogout, onSele
                             requestAuthentication("Connexion requise : Cet espace requiert une clé d'accès.");
                             return;
                           }
-                          setPopup({
-                            title: "Mon Compte",
-                            message: "Ouverture de l'espace Mon compte (Célestin / Profil) - Bientôt disponible.",
-                            type: "info"
-                          });
+                          onNavigate('account');
                         }}
                         className="w-full flex items-center gap-3 px-4 py-2 text-xs font-mono text-[#cdc3d4] hover:text-primary hover:bg-primary/5 transition-all text-left cursor-pointer"
                       >

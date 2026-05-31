@@ -5,6 +5,7 @@ import AuctionsList from './views/AuctionsList';
 import Auction from './views/Auction';
 import Preparation from './views/Preparation';
 import Checkout from './views/Checkout';
+import Account from './views/Account';
 import { Sparkles, AlertTriangle } from 'lucide-react';
 import { mockUsers } from './data/mockData';
 
@@ -189,6 +190,13 @@ function App() {
           checkoutData={checkoutData}
           onClearCart={handleClearCart}
           onNavigate={handleNavigate}
+        />
+      ) : activeView === 'account' ? (
+        <Account
+          user={user}
+          onUpdateUser={(updatedData) => setUser(prev => ({ ...prev, ...updatedData }))}
+          onNavigate={handleNavigate}
+          onLogout={handleLogout}
         />
       ) : (
         <Auction 
