@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Lock, ArrowRight, Zap, Shield, User, Sparkles, Eye, EyeOff, Cpu } from 'lucide-react';
 
-function Login({ onLogin }) {
+function Login({ onLogin, onBack }) {
   const [isRegistering, setIsRegistering] = useState(false);
   const [role, setRole] = useState('buyer'); // 'buyer', 'seller' ou 'admin'
   const [email, setEmail] = useState('buyer@mercatonova.com');
@@ -12,6 +12,7 @@ function Login({ onLogin }) {
   const [username, setUsername] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [popup, setPopup] = useState(null);
 
   // Met à jour les credentials de test quand le rôle change (seulement en mode connexion)
   const handleRoleChange = (selectedRole) => {
@@ -31,7 +32,10 @@ function Login({ onLogin }) {
     e.preventDefault();
     if (isRegistering) {
       // Inscription simulée sans logique réelle
-      alert("Inscription réussie (Simulation). Bienvenue au Syndicat ! Vous pouvez maintenant vous connecter.");
+      setPopup({
+        title: "Inscription Réussie",
+        message: "Inscription réussie (Simulation). Bienvenue au Syndicat ! Vous pouvez maintenant vous connecter."
+      });
       setIsRegistering(false);
     } else {
       // Connecte instantanément sans requête API pour cette étape
@@ -51,7 +55,7 @@ function Login({ onLogin }) {
       <div className="absolute bottom-[20%] right-[20%] w-[500px] h-[500px] rounded-full bg-secondary/5 blur-[120px] pointer-events-none z-0"></div>
 
       {/* Spacing Header */}
-      <header className="relative w-full max-w-7xl mx-auto px-6 py-8 flex justify-center md:justify-start z-10">
+      <header className="relative w-full max-w-7xl mx-auto px-6 py-8 flex justify-between items-center z-10">
         <div className="flex items-center space-x-2.5">
           <div className="w-9 h-9 rounded bg-[#bb86fc] flex items-center justify-center font-black tracking-tighter text-[#460283] italic text-lg shadow-[0_0_12px_rgba(187,134,252,0.4)]">
             MN
@@ -61,6 +65,15 @@ function Login({ onLogin }) {
             <p className="text-[9px] text-[#cdc3d4]/50 font-mono tracking-widest -mt-1 uppercase">Tokyo Underground</p>
           </div>
         </div>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider font-mono cursor-pointer transition-all bg-white/5 border border-white/10 hover:border-[#bb86fc] rounded-lg text-white hover:bg-white/10 active:scale-95"
+          >
+            Retour au Catalogue
+          </button>
+        )}
       </header>
 
       {/* Main Login Form Container */}
@@ -295,6 +308,28 @@ function Login({ onLogin }) {
           <span>Accès Sécurisé par Entiercement</span>
         </div>
       </footer>
+
+      {popup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
+          <div className="glass-panel w-full max-w-md rounded-2xl border border-[#bb86fc]/30 p-8 shadow-[0_0_50px_rgba(187,134,252,0.3)] animate-in fade-in zoom-in-95 duration-200 relative">
+            <span className="absolute top-3 left-3 w-1.5 h-1.5 rounded-full bg-[#bb86fc] animate-pulse"></span>
+            <span className="absolute top-3 right-3 w-1.5 h-1.5 rounded-full bg-[#17deca] animate-pulse"></span>
+            <div className="text-center space-y-4">
+              <div className="w-12 h-12 rounded-full bg-[#bb86fc]/10 flex items-center justify-center mx-auto text-[#bb86fc] border border-[#bb86fc]/20 shadow-[0_0_15px_rgba(187,134,252,0.2)]">
+                <Sparkles size={24} />
+              </div>
+              <h3 className="text-lg font-black italic tracking-tighter uppercase text-white font-headline-md">{popup.title}</h3>
+              <p className="text-xs text-[#cdc3d4]/80 font-mono leading-relaxed">{popup.message}</p>
+              <button 
+                onClick={() => setPopup(null)}
+                className="w-full mt-6 py-3 bg-[#bb86fc] hover:bg-[#bb86fc]/90 text-[#460283] font-bold text-xs uppercase tracking-wider rounded-lg transition-all"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
