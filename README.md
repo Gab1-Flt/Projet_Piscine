@@ -4,11 +4,11 @@
 
 **Specialized JDM Import E-Commerce Platform · Full-Stack React, PHP & MySQL**
 
-[![React](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=121212)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-5.2-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![PHP](https://img.shields.io/badge/PHP-PDO_REST_API-777BB4?style=for-the-badge&logo=php&logoColor=white)](https://www.php.net/)
-[![MySQL](https://img.shields.io/badge/MySQL-MAMP-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
+[![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat&logo=react&logoColor=121212)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-5.2-646CFF?style=flat&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?style=flat&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![PHP](https://img.shields.io/badge/PHP-PDO_REST_API-777BB4?style=flat&logo=php&logoColor=white)](https://www.php.net/)
+[![MySQL](https://img.shields.io/badge/MySQL-MAMP-4479A1?style=flat&logo=mysql&logoColor=white)](https://www.mysql.com/)
 
 [English](#english) • [Français](#francais)
 
